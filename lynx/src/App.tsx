@@ -6,6 +6,9 @@ import reactLynxLogo from './assets/react-logo.png';
 
 export function App(props: { onRender?: () => void }) {
   const [alterLogo, setAlterLogo] = useState(false);
+  const [pickedImageSrc, setPickedImageSrc] = useState<string | null>(null);
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const [isPickingImage, setIsPickingImage] = useState(false);
 
   useEffect(() => {
     console.info('Hello, ReactLynx');
@@ -15,6 +18,32 @@ export function App(props: { onRender?: () => void }) {
   const onTap = useCallback(() => {
     'background only';
     setAlterLogo((prevAlterLogo) => !prevAlterLogo);
+  }, []);
+
+  const onPickImage = useCallback(() => {
+    'background only';
+
+    if (!NativeModules?.NativeImagePickerModule) {
+      setPickerError(
+        'NativeImagePickerModule is not registered in this host app yet.',
+      );
+      return;
+    }
+
+    setIsPickingImage(true);
+    setPickerError(null);
+
+    NativeModules.NativeImagePickerModule.pickImageFromFileManager(
+      (dataUrl, error) => {
+        setIsPickingImage(false);
+        if (error || !dataUrl) {
+          setPickedImageSrc(null);
+          setPickerError(error ?? 'No image was selected.');
+          return;
+        }
+        setPickedImageSrc(dataUrl);
+      },
+    );
   }, []);
 
   return (
@@ -48,6 +77,31 @@ export function App(props: { onRender?: () => void }) {
           <text className="m-[15rpx] text-[20px] text-yellow-100">
             Tap the logo and have fun twice!
           </text>
+          <view
+            className="mt-3 rounded-xl bg-white/15 px-4 py-2"
+            bindtap={onPickImage}
+          >
+            <text className="text-[14px] font-semibold text-white">
+              {isPickingImage ? 'Opening file manager...' : 'Pick image file'}
+            </text>
+          </view>
+          {pickerError ? (
+            <text className="mt-3 px-5 text-center text-[12px] text-red-200">
+              {pickerError}
+            </text>
+          ) : null}
+          {pickedImageSrc ? (
+            <view className="mt-4 items-center">
+              <text className="mb-2 text-[12px] text-white/70">
+                Selected image preview
+              </text>
+              <image
+                src={pickedImageSrc}
+                mode="aspectFit"
+                className="h-[160px] w-[220px] rounded-xl bg-white/10"
+              />
+            </view>
+          ) : null}
           <text className="m-[5px] text-[12px] text-white/65">
             Edit
             <text className="italic text-white/85">{' src/App.tsx '}</text>

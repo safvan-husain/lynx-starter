@@ -3,14 +3,24 @@
 *.local
 *.log*
 
-# Dist
-node_modules
-dist/
+# Dependencies and build outputs
+**/node_modules
+**/dist
+**/.turbo
+**/.next
+**/build
+**/Pods
+**/DerivedData
+**/.symlinks
 
 # IDE
 .vscode/*
 !.vscode/extensions.json
 .idea
+**/*.xcuserstate
+**/xcuserdata/
+**/*.xcworkspace/xcuserdata/
+lynx-ios/lynx-ios.xcworkspace/
 
 # TypeScript
 *.tsbuildinfo
