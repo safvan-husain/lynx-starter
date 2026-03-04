@@ -20,9 +20,11 @@
     "@lynx-js/qrcode-rsbuild-plugin": "^0.4.5",
     "@lynx-js/react-rsbuild-plugin": "^0.12.8",
     "@lynx-js/rspeedy": "^0.13.4",
+    "@lynx-js/tailwind-preset": "^0.4.0",
     "@lynx-js/types": "3.7.0",
     "@rsbuild/plugin-type-check": "1.3.3",
     "@types/react": "^18.3.28",
+    "tailwindcss": "^3.4.19",
     "typescript": "~5.9.3"
   },
   "engines": {
