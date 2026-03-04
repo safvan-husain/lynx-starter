@@ -20,7 +20,7 @@
 **/*.xcuserstate
 **/xcuserdata/
 **/*.xcworkspace/xcuserdata/
-lynx-ios/lynx-ios.xcworkspace/
+ios/lynx-ios/lynx-ios.xcworkspace/
 
 # TypeScript
 *.tsbuildinfo

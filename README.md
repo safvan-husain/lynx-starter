@@ -11,7 +11,8 @@ This repository is now structured as a monorepo:
 
 - The existing Lynx app lives in `lynx/`.
 - Native image-picker module samples are in `lynx/native-modules/`.
-- `ios/`, `android/`, and `web/` are initialized as empty workspace placeholders.
+- iOS Swift host app is available in `ios/lynx-ios/`.
+- `android/` and `web/` are initialized as empty workspace placeholders.
 
 ## Lynx commands
 
