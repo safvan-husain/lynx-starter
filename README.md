@@ -1,23 +1,28 @@
-# Lynx Monorepo
+# integrating-lynx-demo-projects
 
-This repository is now structured as a monorepo:
+This repository includes some demo projects of platform applications for getting started with integrating Lynx to existing project.
 
-- `lynx/`: shared Lynx UI and logic project (moved from previous root)
-- `ios/`: iOS host app workspace (to register Lynx native modules)
-- `android/`: Android host app workspace (to register Lynx native modules)
-- `web/`: web app workspace (to consume shared Lynx/UI logic as needed)
+## Lynx Frontend Project
 
-## Current status
+- [`lyxn-project`] : Lynx (Rspeedy) frontend project that builds `main.lynx.bundle` and can sync it into all host apps.
 
-- The existing Lynx app lives in `lynx/`.
-- Native image-picker module samples are in `lynx/native-modules/`.
-- iOS Swift host app is available in `ios/lynx-ios/`.
-- `android/` and `web/` are initialized as empty workspace placeholders.
+## Android Empty Projects
 
-## Lynx commands
+- [`KotlinEmptyProject`] : Language of Main Activity and build configuration is Kotlin.
+- [`JavaEmptyProject`] : Languange of Main Activity is Java and languange of build configuration is groovy.
 
-Run these from `lynx/`:
+## iOS Empty Projects
 
-- `pnpm run dev`
-- `pnpm run build`
-- `pnpm run test`
+- [`SwiftEmptyProject`] : Swift project with SwiftUI.
+- [`ObjcEmptyProject`] : Objective-C project.
+
+## harmony Empty Projects
+
+- [`HarmonyEmptyProject`] : ArkTs Harmony project.
+
+[`JavaEmptyProject`]: ./android/JavaEmptyProject
+[`KotlinEmptyProject`]: ./android/KotlinEmptyProject
+[`ObjcEmptyProject`]: ./ios/HelloLynxObjc
+[`SwiftEmptyProject`]: ./ios/HelloLynxSwift
+[`HarmonyEmptyProject`]: ./harmony/HarmonyEmptyProject
+[`lyxn-project`]: ./lyxn-project

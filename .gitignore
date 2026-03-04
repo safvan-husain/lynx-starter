@@ -1,26 +1,10 @@
-# Local
 .DS_Store
-*.local
-*.log*
 
-# Dependencies and build outputs
-**/node_modules
-**/dist
-**/.turbo
-**/.next
-**/build
-**/Pods
-**/DerivedData
-**/.symlinks
+# Local/dev artifacts
+**/.DS_Store
+**/*.log
 
-# IDE
-.vscode/*
-!.vscode/extensions.json
-.idea
-**/*.xcuserstate
-**/xcuserdata/
-**/*.xcworkspace/xcuserdata/
-ios/lynx-ios/lynx-ios.xcworkspace/
-
-# TypeScript
-*.tsbuildinfo
+# Lynx frontend project generated files
+lyxn-project/package-lock.json
+lyxn-project/node_modules/
+lyxn-project/dist/

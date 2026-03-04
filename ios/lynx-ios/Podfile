@@ -1,9 +1,0 @@
-platform :ios, '14.0'
-
-target 'lynx-ios' do
-  use_frameworks!
-
-  # Keep versions flexible so `pod install` pulls a compatible latest release.
-  pod 'Lynx'
-  pod 'PrimJS'
-end
