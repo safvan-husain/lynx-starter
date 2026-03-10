@@ -12,7 +12,7 @@ This repository includes some demo projects of platform applications for getting
 
 ## iOS Empty Projects
 
-- [`SwiftEmptyProject`] : Swift project with SwiftUI.
+- [`iOSProject`] : Swift project with SwiftUI.
 
 ## harmony Empty Projects
 
@@ -20,6 +20,6 @@ This repository includes some demo projects of platform applications for getting
 
 [`AndroidProject`]: ./android
 
-[`SwiftEmptyProject`]: ./ios/HelloLynxSwift
+[`iOSProject`]: ./ios
 [`HarmonyEmptyProject`]: ./harmony/HarmonyEmptyProject
 [`lyxn-project`]: ./lyxn-project

@@ -13,7 +13,7 @@ fi
 
 targets=(
   "$ROOT_DIR/android/app/src/main/assets/main.lynx.bundle"
-  "$ROOT_DIR/ios/HelloLynxSwift/main.lynx.bundle"
+  "$ROOT_DIR/ios/main.lynx.bundle"
   "$ROOT_DIR/harmony/HarmonyEmptyProject/entry/src/main/resources/rawfile/main.lynx.bundle"
 )
 

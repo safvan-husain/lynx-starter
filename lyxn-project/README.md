@@ -23,7 +23,7 @@ This runs:
 1. `npm run build` to generate `dist/main.lynx.bundle`
 2. `npm run sync:hosts` to copy that bundle into:
    - `android/app/src/main/assets/main.lynx.bundle`
-   - `ios/HelloLynxSwift/main.lynx.bundle`
+   - `ios/main.lynx.bundle`
    - `harmony/HarmonyEmptyProject/entry/src/main/resources/rawfile/main.lynx.bundle`
 
 After that, run any native host app from Android Studio / Xcode / DevEco Studio and it will render this Lynx bundle.
