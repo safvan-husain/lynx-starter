@@ -12,10 +12,8 @@ if [[ ! -f "$BUNDLE_PATH" ]]; then
 fi
 
 targets=(
-  "$ROOT_DIR/android/KotlinEmptyProject/app/src/main/assets/main.lynx.bundle"
-  "$ROOT_DIR/android/JavaEmptyProject/app/src/main/assets/main.lynx.bundle"
+  "$ROOT_DIR/android/app/src/main/assets/main.lynx.bundle"
   "$ROOT_DIR/ios/HelloLynxSwift/main.lynx.bundle"
-  "$ROOT_DIR/ios/HelloLynxObjc/main.lynx.bundle"
   "$ROOT_DIR/harmony/HarmonyEmptyProject/entry/src/main/resources/rawfile/main.lynx.bundle"
 )
 

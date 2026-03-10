@@ -14,10 +14,11 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        mavenCentral()
         google()
+        mavenCentral()
     }
 }
 
-rootProject.name = "JavaEmptyProject"
-include ':app'
+rootProject.name = "AndroidProject"
+include(":app")
+ 
