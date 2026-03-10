@@ -5,8 +5,11 @@ class ViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
 
+    let config = LynxConfig(provider: DemoLynxProvider())
+    config.register(WebSocketModule.self)
+
     let lynxView = LynxView { builder in
-      builder.config = LynxConfig(provider: DemoLynxProvider())
+      builder.config = config
       builder.screenSize = self.view.frame.size
       builder.fontScale = 1.0
     }
