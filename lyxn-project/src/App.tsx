@@ -1,15 +1,18 @@
-import { useState, useCallback, useRef } from "@lynx-js/react";
-import type { NodesRef } from "@lynx-js/types";
+import { useCallback, useRef, useState } from '@lynx-js/react';
+import type { NodesRef } from '@lynx-js/types';
 
 // Note: SystemInfo is available globally in Lynx, but we can just use the global scope
 
-const WS_URL = SystemInfo.platform === 'Android' ? "ws://10.0.2.2:8080" : "ws://localhost:8080";
+const WS_URL =
+  SystemInfo.platform === 'Android'
+    ? 'ws://10.0.2.2:8080'
+    : 'ws://localhost:8080';
 
 export function App() {
-  const [status, setStatus] = useState<string>("disconnected");
+  const [status, setStatus] = useState<string>('disconnected');
   const [lastResponse, setLastResponse] = useState<string | null>(null);
   const [log, setLog] = useState<string[]>([]);
-  const inputTextRef = useRef("");
+  const inputTextRef = useRef('');
   const inputRef = useRef<NodesRef>(null);
 
   const handleConnect = useCallback(() => {
@@ -26,10 +29,10 @@ export function App() {
     const text = inputTextRef.current.trim();
     if (!text) return;
     const sent = text;
-    inputTextRef.current = "";
+    inputTextRef.current = '';
     // Clear the input field via invoke
     inputRef.current
-      ?.invoke({ method: "setValue", params: { value: "" } })
+      ?.invoke({ method: 'setValue', params: { value: '' } })
       .exec();
     NativeModules.WebSocketModule.sendMessage(sent, (response: string) => {
       setLastResponse(response);
@@ -37,8 +40,8 @@ export function App() {
     });
   }, []);
 
-  const isConnected = status === "connected";
-  const statusDot = isConnected ? "🟢" : "🔴";
+  const isConnected = status === 'connected';
+  const statusDot = isConnected ? '🟢' : '🔴';
 
   return (
     <view className="min-h-screen bg-slate-900 px-5 py-10">
@@ -57,11 +60,11 @@ export function App() {
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </text>
         <view
-          className={`rounded-lg px-4 py-2 ${isConnected ? "bg-red-500/80" : "bg-emerald-500/80"}`}
+          className={`rounded-lg px-4 py-2 ${isConnected ? 'bg-red-500/80' : 'bg-emerald-500/80'}`}
           bindtap={isConnected ? handleDisconnect : handleConnect}
         >
           <text className="text-sm font-semibold text-white">
-            {isConnected ? "Disconnect" : "Connect"}
+            {isConnected ? 'Disconnect' : 'Connect'}
           </text>
         </view>
       </view>
@@ -77,7 +80,7 @@ export function App() {
           placeholder="Type a message..."
         />
         <view
-          className={`rounded-xl px-5 py-3 ${isConnected ? "bg-blue-500" : "bg-gray-600"}`}
+          className={`rounded-xl px-5 py-3 ${isConnected ? 'bg-blue-500' : 'bg-gray-600'}`}
           bindtap={isConnected ? handleSend : undefined}
         >
           <text className="text-sm font-semibold text-white">Send</text>

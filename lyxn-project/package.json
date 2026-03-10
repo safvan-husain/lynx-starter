@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "rspeedy build",
-    "build:hosts": "npm run build && npm run sync:hosts",
+    "build:hosts": "pnpm run build && pnpm run sync:hosts",
     "check": "biome check --write",
     "dev": "rspeedy dev",
     "format": "biome format --write",
