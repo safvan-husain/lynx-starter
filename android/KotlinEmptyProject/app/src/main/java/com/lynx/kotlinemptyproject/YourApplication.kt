@@ -45,6 +45,8 @@ class YourApplication : Application() {
             null,
             null
         )
+        // Register WebSocketModule
+        LynxEnv.inst().registerModule("WebSocketModule", WebSocketModule::class.java)
         // Turn on Lynx Debug
         LynxEnv.inst().enableLynxDebug(true)
         // Turn on Lynx DevTool

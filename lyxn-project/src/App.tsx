@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef } from "@lynx-js/react";
 import type { NodesRef } from "@lynx-js/types";
 
-const WS_URL = "ws://localhost:8080";
+// Note: SystemInfo is available globally in Lynx, but we can just use the global scope
+
+const WS_URL = SystemInfo.platform === 'Android' ? "ws://10.0.2.2:8080" : "ws://localhost:8080";
 
 export function App() {
   const [status, setStatus] = useState<string>("disconnected");
