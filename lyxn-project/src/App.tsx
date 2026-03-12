@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from '@lynx-js/react';
 import type { NodesRef } from '@lynx-js/types';
+import { SpacetimeDBTest } from './components/SpacetimeDBTest';
 
 // Note: SystemInfo is available globally in Lynx, but we can just use the global scope
 
@@ -8,7 +9,11 @@ const WS_URL =
     ? 'ws://10.0.2.2:8080'
     : 'ws://localhost:8080';
 
-export function App() {
+// Tab types for switching between tests
+type TabType = 'websocket' | 'spacetimedb';
+
+// Original WebSocket Echo Component
+function WebSocketEcho() {
   const [status, setStatus] = useState<string>('disconnected');
   const [lastResponse, setLastResponse] = useState<string | null>(null);
   const [log, setLog] = useState<string[]>([]);
@@ -44,7 +49,7 @@ export function App() {
   const statusDot = isConnected ? '🟢' : '🔴';
 
   return (
-    <view className="min-h-screen bg-slate-900 px-5 py-10">
+    <view className="flex-1">
       {/* Header */}
       <view className="mb-6">
         <text className="text-3xl font-bold text-white mb-1">
@@ -106,6 +111,48 @@ export function App() {
           ))}
         </view>
       )}
+    </view>
+  );
+}
+
+// Main App with Tab Switching
+export function App() {
+  const [activeTab, setActiveTab] = useState<TabType>('websocket');
+
+  return (
+    <view className="min-h-screen bg-slate-900">
+      {/* Tab Bar */}
+      <view className="flex-row border-b border-white/10 bg-slate-800/50">
+        <view
+          className={`flex-1 py-4 px-2 ${activeTab === 'websocket' ? 'border-b-2 border-blue-500' : ''}`}
+          bindtap={() => setActiveTab('websocket')}
+        >
+          <text
+            className={`text-sm font-semibold text-center ${
+              activeTab === 'websocket' ? 'text-white' : 'text-white/50'
+            }`}
+          >
+            WebSocket
+          </text>
+        </view>
+        <view
+          className={`flex-1 py-4 px-2 ${activeTab === 'spacetimedb' ? 'border-b-2 border-emerald-500' : ''}`}
+          bindtap={() => setActiveTab('spacetimedb')}
+        >
+          <text
+            className={`text-sm font-semibold text-center ${
+              activeTab === 'spacetimedb' ? 'text-white' : 'text-white/50'
+            }`}
+          >
+            SpacetimeDB
+          </text>
+        </view>
+      </view>
+
+      {/* Content */}
+      <view className="flex-1 px-5 py-6">
+        {activeTab === 'websocket' ? <WebSocketEcho /> : <SpacetimeDBTest />}
+      </view>
     </view>
   );
 }

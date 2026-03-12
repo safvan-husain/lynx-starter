@@ -12,7 +12,8 @@
     "sync:hosts": "bash ./scripts/sync-host-bundles.sh"
   },
   "dependencies": {
-    "@lynx-js/react": "^0.116.3"
+    "@lynx-js/react": "^0.116.3",
+    "spacetimedb-lynx": "file:../spacetimeDB-source/spacetimedb-lynx"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.14",
@@ -22,6 +23,7 @@
     "@lynx-js/rspeedy": "^0.13.4",
     "@lynx-js/tailwind-preset": "^0.4.0",
     "@lynx-js/types": "3.7.0",
+    "@rsbuild/plugin-node-polyfill": "^1.4.4",
     "@rsbuild/plugin-type-check": "1.3.3",
     "@types/react": "^18.3.28",
     "tailwindcss": "^3.4.19",
