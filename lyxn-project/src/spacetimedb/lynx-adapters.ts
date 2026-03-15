@@ -5,6 +5,7 @@
  */
 
 import type { LynxWebSocket, LynxHttpClient, LynxHttpResponse } from 'spacetimedb-lynx';
+import { base64ToBytes, bytesToBase64 } from 'spacetimedb-lynx';
 
 /**
  * Lynx WebSocket Adapter
@@ -15,18 +16,20 @@ class LynxWebSocketAdapter implements LynxWebSocket {
   private url: string;
   private protocol?: string;
   private _isConnected = false;
+  private headers?: Record<string, string>;
 
   onopen?: () => void;
   onmessage?: (event: { data: Uint8Array }) => void;
   onclose?: (event: { code: number; reason: string }) => void;
   onerror?: (error: any) => void;
 
-  constructor(url: string, protocol?: string) {
+  constructor(url: string, protocol?: string, headers?: Record<string, string>) {
     console.log('[LynxWebSocketAdapter] Constructor called with URL:', url);
     console.log('[LynxWebSocketAdapter] Protocol:', protocol);
     
     this.url = url;
     this.protocol = protocol;
+    this.headers = headers;
     this.initializeConnection();
   }
 
@@ -57,11 +60,9 @@ class LynxWebSocketAdapter implements LynxWebSocket {
       }
     };
 
-    const messageHandler = (message: string) => {
+    const messageHandlerBase64 = (base64: string) => {
       if (this._isConnected && this.onmessage) {
-        // Convert string message to Uint8Array
-        const encoder = new TextEncoder();
-        const data = encoder.encode(message);
+        const data = base64ToBytes(base64);
         this.onmessage({ data });
       }
     };
@@ -78,16 +79,20 @@ class LynxWebSocketAdapter implements LynxWebSocket {
     
     console.log('[LynxWebSocketAdapter] Final URL for native module:', wsUrl);
 
-    // Use the message handler version if available
-    if (NativeModules.WebSocketModule.connectWithMessageHandler) {
-      NativeModules.WebSocketModule.connectWithMessageHandler(
-        wsUrl,  // Use converted URL
-        statusHandler,
-        messageHandler
-      );
-    } else {
-      NativeModules.WebSocketModule.connect(wsUrl, statusHandler);  // Use converted URL
-    }
+    // SpacetimeDB requires:
+    // - correct WS subprotocol (v2.bsatn.spacetimedb)
+    // - binary frames (we shuttle via base64 over the bridge)
+    // - Authorization header on native platforms (so we don't need fetch token exchange)
+    const protocol = this.protocol ?? 'v2.bsatn.spacetimedb';
+    const headersJson = this.headers ? JSON.stringify(this.headers) : null;
+
+    NativeModules.WebSocketModule.connectWithMessageHandler(
+      wsUrl,
+      protocol,
+      headersJson,
+      statusHandler,
+      messageHandlerBase64
+    );
   }
 
   send(data: Uint8Array): void {
@@ -96,15 +101,8 @@ class LynxWebSocketAdapter implements LynxWebSocket {
       return;
     }
 
-    // Convert Uint8Array to string
-    const decoder = new TextDecoder();
-    const message = decoder.decode(data);
-
-    if (NativeModules.WebSocketModule.sendMessageAsync) {
-      NativeModules.WebSocketModule.sendMessageAsync(message);
-    } else {
-      NativeModules.WebSocketModule.sendMessage(message, (_response: string) => {});
-    }
+    const payload = bytesToBase64(data);
+    NativeModules.WebSocketModule.sendBinary(payload);
   }
 
   close(): void {
@@ -219,9 +217,13 @@ export const createLynxHttpClient = (): LynxHttpClient => {
  * Create Lynx WebSocket factory function
  */
 export const createLynxWebSocketFactory = () => {
-  return async (url: string, protocol?: string): Promise<LynxWebSocket> => {
+  return async (
+    url: string,
+    protocol: string,
+    headers?: Record<string, string>
+  ): Promise<LynxWebSocket> => {
     console.log('[LynxWebSocketFactory] Creating WebSocket with URL:', url);
     console.log('[LynxWebSocketFactory] Protocol:', protocol);
-    return new LynxWebSocketAdapter(url, protocol);
+    return new LynxWebSocketAdapter(url, protocol, headers);
   };
 };

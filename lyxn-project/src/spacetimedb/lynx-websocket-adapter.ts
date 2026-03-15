@@ -2,6 +2,8 @@
  * Lynx WebSocket Adapter for SpacetimeDB
  */
 
+import { base64ToBytes } from 'spacetimedb-lynx';
+
 export interface LynxWebSocketAdapter {
   send(data: string | ArrayBuffer | Blob): void;
   close(code?: number, reason?: string): void;
@@ -30,6 +32,7 @@ class LynxWebSocketAdapterImpl implements LynxWebSocketAdapter {
   private _readyState: number = CONNECTING;
   private messageHandler: ((message: string) => void) | null = null;
   private statusHandler: ((status: string) => void) | null = null;
+  private decoder = new TextDecoder('utf-8');
 
   onopen: ((event: Event) => void) | null = null;
   onclose: ((event: CloseEvent) => void) | null = null;
@@ -62,9 +65,12 @@ class LynxWebSocketAdapterImpl implements LynxWebSocketAdapter {
       return;
     }
 
-    this.messageHandler = (message: string) => {
+    this.messageHandler = (base64: string) => {
       if (this._readyState === OPEN) {
-        const event = new MessageEvent('message', { data: message });
+        // Native bridge forwards base64 strings; decode to UTF-8 text for this polyfill.
+        const bytes = base64ToBytes(base64);
+        const text = this.decoder.decode(bytes);
+        const event = new MessageEvent('message', { data: text });
         this.onmessage?.(event);
       }
     };
@@ -93,6 +99,8 @@ class LynxWebSocketAdapterImpl implements LynxWebSocketAdapter {
     if (NativeModules.WebSocketModule.connectWithMessageHandler) {
       NativeModules.WebSocketModule.connectWithMessageHandler(
         this.url,
+        '',
+        null,
         this.statusHandler,
         this.messageHandler
       );

@@ -14,9 +14,11 @@
 + (NSDictionary<NSString *, NSString *> *)methodLookup {
     return @{
         @"connect"     : NSStringFromSelector(@selector(connectWithUrl:statusCallback:)),
-        @"connectWithMessageHandler" : NSStringFromSelector(@selector(connectWithUrl:statusCallback:messageCallback:)),
+        // Binary-safe API used by SpacetimeDB client. Incoming messages are base64 strings.
+        @"connectWithMessageHandler" : NSStringFromSelector(@selector(connectWithUrl:protocol:headersJson:statusCallback:messageCallback:)),
         @"sendMessage" : NSStringFromSelector(@selector(sendMessage:callback:)),
         @"sendMessageAsync" : NSStringFromSelector(@selector(sendMessageAsync:)),
+        @"sendBinary" : NSStringFromSelector(@selector(sendBinary:)),
         @"disconnect"  : NSStringFromSelector(@selector(doDisconnect)),
     };
 }
@@ -38,16 +40,26 @@
     }];
 }
 
-/// Connect with message callback for bidirectional communication (SpacetimeDB)
-- (void)connectWithUrl:(NSString *)url statusCallback:(LynxCallbackBlock)statusCallback messageCallback:(LynxCallbackBlock)messageCallback {
+/// Connect with message callback for bidirectional communication (SpacetimeDB).
+/// This binary-safe variant forwards incoming messages as base64 strings.
+- (void)connectWithUrl:(NSString *)url
+              protocol:(NSString *)protocol
+           headersJson:(id)headersJson
+        statusCallback:(LynxCallbackBlock)statusCallback
+       messageCallback:(LynxCallbackBlock)messageCallback {
     _messageCallback = messageCallback;
-    [_client connectWithUrl:url statusCallback:^(NSString *status) {
+    NSString *headersString = nil;
+    if ([headersJson isKindOfClass:[NSString class]]) {
+        headersString = (NSString *)headersJson;
+    }
+
+    [_client connectBinaryWithUrl:url protocol:protocol headersJson:headersString statusCallback:^(NSString *status) {
         if (statusCallback) {
             statusCallback(status);
         }
-    } messageCallback:^(NSString *message) {
+    } messageCallback:^(NSString *base64) {
         if (messageCallback) {
-            messageCallback(message);
+            messageCallback(base64);
         }
     }];
 }
@@ -63,6 +75,10 @@
 /// Send message without waiting for response (fire and forget)
 - (void)sendMessageAsync:(NSString *)message {
     [_client sendMessage:message];
+}
+
+- (void)sendBinary:(NSString *)base64 {
+    [_client sendBinary:base64];
 }
 
 - (void)doDisconnect {

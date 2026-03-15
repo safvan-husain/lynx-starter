@@ -6,7 +6,6 @@ export type { UseSpacetimeDBOptions, UseSpacetimeDBReturn } from './useSpacetime
 
 // Re-export spacetimedb-lynx types for convenience
 export type { 
-  TableRow, 
   TableUpdate, 
   ReducerEvent, 
   SubscriptionCallback, 

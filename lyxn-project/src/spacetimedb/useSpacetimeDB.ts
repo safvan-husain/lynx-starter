@@ -18,8 +18,8 @@ export interface UseSpacetimeDBReturn {
   error: Error | null;
   connect: () => Promise<void>;
   disconnect: () => void;
-  subscribeToTable: (tableName: string, callback?: (rows: any[]) => void) => () => void;
-  callReducer: (name: string, args?: any, callback?: (event: any) => void) => Promise<void>;
+  subscribeToTable: (tableName: string, callback?: (rows: Uint8Array[]) => void) => () => void;
+  callReducer: (name: string, argsBytes?: Uint8Array, callback?: (event: any) => void) => Promise<void>;
 }
 
 /**
@@ -85,7 +85,7 @@ export function useSpacetimeDB(options: UseSpacetimeDBOptions = {}): UseSpacetim
     setIsConnecting(false);
   }, []);
 
-  const subscribeToTable = useCallback((tableName: string, callback?: (rows: any[]) => void): (() => void) => {
+  const subscribeToTable = useCallback((tableName: string, callback?: (rows: Uint8Array[]) => void): (() => void) => {
     if (!clientRef.current) {
       console.warn('SpacetimeDB not connected. Call connect() first.');
       return () => {}; // Return empty function instead of null
@@ -93,12 +93,12 @@ export function useSpacetimeDB(options: UseSpacetimeDBOptions = {}): UseSpacetim
     return wrapperRef.current.subscribeToTable(tableName, callback);
   }, []);
 
-  const callReducer = useCallback(async (name: string, args: any = {}, callback?: (event: any) => void): Promise<void> => {
+  const callReducer = useCallback(async (name: string, argsBytes: Uint8Array = new Uint8Array(), callback?: (event: any) => void): Promise<void> => {
     if (!clientRef.current) {
       console.warn('SpacetimeDB not connected. Call connect() first.');
       return;
     }
-    return wrapperRef.current.callReducer(name, args, callback);
+    return wrapperRef.current.callReducer(name, argsBytes, callback);
   }, []);
 
   // Auto-connect if requested

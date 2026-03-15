@@ -3,6 +3,7 @@ package com.lynx.kotlinemptyproject
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.util.Log
 import com.lynx.jsbridge.LynxMethod
 import com.lynx.jsbridge.LynxModule
@@ -13,6 +14,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentLinkedQueue
+import org.json.JSONObject
 
 /**
  * WebSocket Module for Lynx
@@ -48,11 +50,11 @@ class WebSocketModule(context: Context) : LynxModule(context) {
      * The messageCallback will be called for every incoming message
      */
     @LynxMethod
-    fun connectWithMessageHandler(url: String, statusCallback: Callback, messageCallback: Callback) {
-        writeLog("INFO", "ConnectWithMessageHandler called with URL: $url")
+    fun connectWithMessageHandler(url: String, protocol: String, headersJson: String?, statusCallback: Callback, messageCallback: Callback) {
+        writeLog("INFO", "ConnectWithMessageHandler called with URL: $url, protocol: $protocol")
         this.statusCallback = statusCallback
         this.messageCallback = messageCallback
-        connectInternal(url)
+        connectInternal(url, protocol, headersJson)
     }
 
     /**
@@ -63,12 +65,39 @@ class WebSocketModule(context: Context) : LynxModule(context) {
         writeLog("INFO", "Connect method called with URL: $url")
         this.statusCallback = callback
         this.messageCallback = null
-        connectInternal(url)
+        connectInternal(url, null, null)
     }
 
-    private fun connectInternal(url: String) {
+    private fun parseHeaders(headersJson: String?): Map<String, String> {
+        if (headersJson == null || headersJson.isBlank() || headersJson == "null") return emptyMap()
+        return try {
+            val obj = JSONObject(headersJson)
+            val out = mutableMapOf<String, String>()
+            val it = obj.keys()
+            while (it.hasNext()) {
+                val k = it.next()
+                val v = obj.optString(k, null)
+                if (v != null) out[k] = v
+            }
+            out
+        } catch (e: Exception) {
+            writeLog("WARN", "Invalid headersJson: ${e.message}")
+            emptyMap()
+        }
+    }
+
+    private fun connectInternal(url: String, protocol: String?, headersJson: String?) {
         val request = try {
-            Request.Builder().url(url).build()
+            val builder = Request.Builder().url(url)
+            val headers = parseHeaders(headersJson)
+            for ((k, v) in headers) {
+                builder.header(k, v)
+            }
+            if (!protocol.isNullOrBlank()) {
+                // Subprotocol negotiation header
+                builder.header("Sec-WebSocket-Protocol", protocol)
+            }
+            builder.build()
         } catch (e: Exception) {
             writeLog("ERROR", "URL Parsing crashed: ${e.message}")
             statusCallback?.invoke("error:invalid_url")
@@ -93,12 +122,22 @@ class WebSocketModule(context: Context) : LynxModule(context) {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 writeLog("INFO", "Received WS Message: $text")
                 mainHandler.post {
-                    // For SpacetimeDB mode, call messageCallback for all incoming messages
-                    messageCallback?.invoke(text)
+                    // Forward as base64 (UTF-8) for bridge safety/consistency.
+                    val bytes = text.toByteArray(Charsets.UTF_8)
+                    val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                    messageCallback?.invoke(base64)
 
                     // Also resolve pending response callback if waiting
                     pendingResponseCallback?.invoke(text)
                     pendingResponseCallback = null
+                }
+            }
+
+            override fun onMessage(webSocket: WebSocket, bytes: okio.ByteString) {
+                writeLog("INFO", "Received WS Binary Message len=${bytes.size}")
+                val base64 = Base64.encodeToString(bytes.toByteArray(), Base64.NO_WRAP)
+                mainHandler.post {
+                    messageCallback?.invoke(base64)
                 }
             }
 
@@ -157,6 +196,28 @@ class WebSocketModule(context: Context) : LynxModule(context) {
         }
     }
 
+    /**
+     * Send a binary message (base64 payload).
+     */
+    @LynxMethod
+    fun sendBinary(base64: String) {
+        if (webSocket == null) {
+            writeLog("ERROR", "webSocket is null, unable to sendBinary!")
+            return
+        }
+        val bytes = try {
+            Base64.decode(base64, Base64.DEFAULT)
+        } catch (e: Exception) {
+            writeLog("ERROR", "Invalid base64 payload: ${e.message}")
+            return
+        }
+
+        val success = webSocket?.send(okio.ByteString.of(bytes, 0, bytes.size)) == true
+        if (!success) {
+            writeLog("ERROR", "sendBinary() returned false")
+        }
+    }
+
     private fun disconnectInternal() {
         if (webSocket != null) {
             writeLog("INFO", "disconnectInternal closing existing socket")
@@ -175,4 +236,3 @@ class WebSocketModule(context: Context) : LynxModule(context) {
         pendingResponseCallback = null
     }
 }
-

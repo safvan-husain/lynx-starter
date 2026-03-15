@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { getSpacetimeClient } from '../spacetimedb';
+import React, { useEffect, useRef, useState } from 'react';
+import { createSpacetimeClient } from '../spacetimedb';
+
+function bytesToHex(bytes: Uint8Array): string {
+  let out = '';
+  for (const b of bytes) out += b.toString(16).padStart(2, '0');
+  return out;
+}
 
 export function SpacetimeDBTest() {
   const [isConnected, setIsConnected] = useState(false);
@@ -9,24 +15,51 @@ export function SpacetimeDBTest() {
   const [serverUrl, setServerUrl] = useState('https://maincloud.spacetimedb.com');
   const [databaseName, setDatabaseName] = useState('lynx-starter-jzx7d');
 
-  const client = getSpacetimeClient({
-    url: serverUrl,
-    database: databaseName
-  });
+  const [identityHex, setIdentityHex] = useState<string | null>(null);
+  const [connectionIdHex, setConnectionIdHex] = useState<string | null>(null);
+  const [tokenLen, setTokenLen] = useState<number | null>(null);
+
+  const [tableName, setTableName] = useState('todo');
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [lastRowCount, setLastRowCount] = useState<number | null>(null);
+  const unsubscribeRef = useRef<null | (() => void)>(null);
+
+  const [reducerName, setReducerName] = useState('noop');
+  const [lastReducerStatus, setLastReducerStatus] = useState<string | null>(null);
+
+  const clientRef = useRef(
+    createSpacetimeClient({
+      url: serverUrl,
+      database: databaseName,
+    }),
+  );
 
   useEffect(() => {
+    const client = clientRef.current;
     // Set up event handlers
     client.onConnect(() => {
       setIsConnected(true);
       setIsConnecting(false);
       setConnectionStatus('Connected');
       setError(null);
+
+      const c = client.getClient();
+      const id = c?.getIdentityBytes();
+      const cid = c?.getConnectionIdBytes();
+      const tok = c?.getToken();
+
+      setIdentityHex(id ? bytesToHex(id) : null);
+      setConnectionIdHex(cid ? bytesToHex(cid) : null);
+      setTokenLen(tok ? tok.length : null);
     });
 
     client.onDisconnect(() => {
       setIsConnected(false);
       setIsConnecting(false);
       setConnectionStatus('Disconnected');
+      setIsSubscribed(false);
+      unsubscribeRef.current = null;
+      setLastRowCount(null);
     });
 
     client.onConnectError((err) => {
@@ -37,6 +70,7 @@ export function SpacetimeDBTest() {
     });
 
     return () => {
+      unsubscribeRef.current?.();
       client.disconnect();
     };
   }, []);
@@ -48,7 +82,7 @@ export function SpacetimeDBTest() {
       setError(null);
       
       console.log('[SpacetimeDBTest] Starting connection...');
-      await client.connect();
+      await clientRef.current.connect();
     } catch (err) {
       setIsConnecting(false);
       console.error('[SpacetimeDBTest] Connection failed:', err);
@@ -58,7 +92,39 @@ export function SpacetimeDBTest() {
   };
 
   const handleDisconnect = () => {
-    client.disconnect();
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
+    clientRef.current.disconnect();
+  };
+
+  const handleSubscribe = () => {
+    if (isSubscribed) return;
+    try {
+      unsubscribeRef.current?.();
+      unsubscribeRef.current = clientRef.current.subscribeToTable(tableName, (rows) => {
+        setLastRowCount(rows.length);
+      });
+      setIsSubscribed(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const handleUnsubscribe = () => {
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
+    setIsSubscribed(false);
+  };
+
+  const handleCallReducer = async () => {
+    setLastReducerStatus(null);
+    try {
+      await clientRef.current.callReducer(reducerName, new Uint8Array(), (event) => {
+        setLastReducerStatus(`${event.status}${event.error ? `: ${event.error}` : ''}`);
+      });
+    } catch (e) {
+      setLastReducerStatus(`error: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   return (
@@ -132,13 +198,96 @@ export function SpacetimeDBTest() {
         </view>
       </view>
 
+      {/* Connection Details */}
+      <view style={{ marginTop: 15, padding: 10, backgroundColor: '#f8f9fa', borderRadius: 5 }}>
+        <text style={{ fontWeight: 'bold', marginBottom: 5 }}>InitialConnection:</text>
+        <text style={{ fontSize: 12, color: '#666' }}>
+          Identity: {identityHex ? identityHex.slice(0, 16) + '…' : '(none)'}
+        </text>
+        <text style={{ fontSize: 12, color: '#666' }}>
+          ConnectionId: {connectionIdHex ? connectionIdHex : '(none)'}
+        </text>
+        <text style={{ fontSize: 12, color: '#666' }}>
+          Token length: {tokenLen ?? '(none)'}
+        </text>
+      </view>
+
+      {/* Subscription Test */}
+      <view style={{ marginTop: 15, padding: 10, backgroundColor: '#f8f9fa', borderRadius: 5 }}>
+        <text style={{ fontWeight: 'bold', marginBottom: 5 }}>Subscribe (Raw Row Bytes):</text>
+        <text style={{ fontSize: 12, color: '#666', marginBottom: 5 }}>
+          Table name must exist in your DB schema.
+        </text>
+        <text style={{ fontSize: 12, color: '#666' }}>Table: {tableName}</text>
+        <input
+          style={{ marginTop: 8, padding: 8, backgroundColor: '#fff', borderRadius: 5 }}
+          placeholder="table name"
+          bindinput={(e: any) => setTableName(e.detail.value)}
+        />
+        <text style={{ fontSize: 12, color: '#666' }}>
+          Last row count: {lastRowCount ?? '(none)'}
+        </text>
+
+        <view style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+          <view
+            bindtap={isConnected && !isSubscribed ? handleSubscribe : undefined}
+            style={{
+              padding: 10,
+              backgroundColor: isConnected && !isSubscribed ? '#28a745' : '#ccc',
+              borderRadius: 5,
+              opacity: isConnected && !isSubscribed ? 1 : 0.5,
+            }}
+          >
+            <text style={{ color: 'white', textAlign: 'center' }}>Subscribe</text>
+          </view>
+          <view
+            bindtap={isSubscribed ? handleUnsubscribe : undefined}
+            style={{
+              padding: 10,
+              backgroundColor: isSubscribed ? '#dc3545' : '#ccc',
+              borderRadius: 5,
+              opacity: isSubscribed ? 1 : 0.5,
+            }}
+          >
+            <text style={{ color: 'white', textAlign: 'center' }}>Unsubscribe</text>
+          </view>
+        </view>
+      </view>
+
+      {/* Reducer Call Test */}
+      <view style={{ marginTop: 15, padding: 10, backgroundColor: '#f8f9fa', borderRadius: 5 }}>
+        <text style={{ fontWeight: 'bold', marginBottom: 5 }}>Call Reducer (Empty Args):</text>
+        <text style={{ fontSize: 12, color: '#666' }}>Reducer: {reducerName}</text>
+        <input
+          style={{ marginTop: 8, padding: 8, backgroundColor: '#fff', borderRadius: 5 }}
+          placeholder="reducer name"
+          bindinput={(e: any) => setReducerName(e.detail.value)}
+        />
+        <text style={{ fontSize: 12, color: '#666' }}>
+          Last reducer status: {lastReducerStatus ?? '(none)'}
+        </text>
+        <view
+          bindtap={isConnected ? handleCallReducer : undefined}
+          style={{
+            marginTop: 10,
+            padding: 10,
+            backgroundColor: isConnected ? '#007bff' : '#ccc',
+            borderRadius: 5,
+            opacity: isConnected ? 1 : 0.5,
+          }}
+        >
+          <text style={{ color: 'white', textAlign: 'center' }}>Call Reducer</text>
+        </view>
+      </view>
+
       {/* Instructions */}
       <view style={{ marginTop: 20, padding: 10, backgroundColor: '#f8f9fa', borderRadius: 5 }}>
         <text style={{ fontWeight: 'bold', marginBottom: 5 }}>Instructions:</text>
         <text>1. Ensure WebSocket module is registered in iOS ViewController</text>
         <text>2. Click Connect to test SpacetimeDB connection</text>
         <text>3. Check console for detailed logs</text>
-        <text>4. This uses the native spacetimedb-lynx package (no polyfills)</text>
+        <text>4. Connected only after InitialConnection (identity/connectionId/token)</text>
+        <text>5. Subscribe expects raw row bytes (no schema decode yet)</text>
       </view>
     </view>
   );

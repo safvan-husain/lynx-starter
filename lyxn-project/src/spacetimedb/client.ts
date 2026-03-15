@@ -94,7 +94,7 @@ class SpacetimeClientWrapper {
   }
 
   // Table subscription methods
-  subscribeToTable(tableName: string, callback?: (rows: any[]) => void): () => void {
+  subscribeToTable(tableName: string, callback?: (rows: Uint8Array[]) => void): () => void {
     if (!this.client) {
       throw new Error('Not connected. Call connect() first.');
     }
@@ -102,11 +102,11 @@ class SpacetimeClientWrapper {
   }
 
   // Reducer call method
-  async callReducer(name: string, args: any = {}, callback?: (event: any) => void): Promise<void> {
+  async callReducer(name: string, argsBytes: Uint8Array, callback?: (event: any) => void): Promise<void> {
     if (!this.client) {
       throw new Error('Not connected. Call connect() first.');
     }
-    return callReducer(name, args, callback);
+    return callReducer(name, argsBytes, callback);
   }
 
   // Event handlers
@@ -141,7 +141,6 @@ export type { SpacetimeClientWrapper as SpacetimeClient };
 
 // Re-export spacetimedb-lynx types and functions for convenience
 export type { 
-  TableRow, 
   TableUpdate, 
   ReducerEvent, 
   SubscriptionCallback, 

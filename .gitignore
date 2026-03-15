@@ -10,3 +10,5 @@ lyxn-project/node_modules/
 lyxn-project/dist/
 spacetimeDB-source/
 my_rust_logic/
+spacetimedb-dart/
+.pnpm-store/

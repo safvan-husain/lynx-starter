@@ -7,6 +7,7 @@ import Foundation
     private var session: URLSession?
     private var statusCallback: ((String) -> Void)?
     private var messageCallback: ((String) -> Void)?
+    private var binaryMessageCallback: ((String) -> Void)?
 
     // Store message callbacks by message content or simply the latest one
     // For a simple echo, we can just resolve the latest pending callback
@@ -17,6 +18,7 @@ import Foundation
     @objc func connect(url urlString: String, statusCallback: @escaping (String) -> Void) {
         self.statusCallback = statusCallback
         self.messageCallback = nil
+        self.binaryMessageCallback = nil
 
         guard let url = URL(string: urlString) else {
             statusCallback("error:invalid_url")
@@ -39,6 +41,7 @@ import Foundation
     @objc func connect(url urlString: String, statusCallback: @escaping (String) -> Void, messageCallback: @escaping (String) -> Void) {
         self.statusCallback = statusCallback
         self.messageCallback = messageCallback
+        self.binaryMessageCallback = nil
 
         guard let url = URL(string: urlString) else {
             statusCallback("error:invalid_url")
@@ -55,6 +58,57 @@ import Foundation
 
         // Start listening continuously
         receiveLoopWithMessages()
+    }
+
+    /// Binary-safe connect variant.
+    /// Incoming frames are forwarded as base64 strings (for bridge safety).
+    ///
+    /// - protocol: WebSocket subprotocol (e.g. "v2.bsatn.spacetimedb"). Pass "" for none.
+    /// - headersJson: JSON string object of headers, or nil.
+    @objc func connectBinary(url urlString: String, `protocol` protocolString: String, headersJson: String?, statusCallback: @escaping (String) -> Void, messageCallback: @escaping (String) -> Void) {
+        self.statusCallback = statusCallback
+        self.messageCallback = nil
+        self.binaryMessageCallback = messageCallback
+
+        guard let url = URL(string: urlString) else {
+            statusCallback("error:invalid_url")
+            return
+        }
+
+        disconnect()
+
+        var request = URLRequest(url: url)
+
+        if !protocolString.isEmpty {
+            // URLSessionWebSocketTask doesn't provide a URLRequest + protocols initializer on all iOS versions.
+            // Setting the header works for standard subprotocol negotiation.
+            request.setValue(protocolString, forHTTPHeaderField: "Sec-WebSocket-Protocol")
+        }
+
+        if let headersJson, !headersJson.isEmpty {
+            if let data = headersJson.data(using: .utf8) {
+                do {
+                    let obj = try JSONSerialization.jsonObject(with: data, options: [])
+                    if let dict = obj as? [String: Any] {
+                        for (k, v) in dict {
+                            if let s = v as? String {
+                                request.setValue(s, forHTTPHeaderField: k)
+                            }
+                        }
+                    }
+                } catch {
+                    // Non-fatal; surface a warning and continue.
+                    statusCallback("warn:invalid_headers_json")
+                }
+            }
+        }
+
+        session = URLSession(configuration: .default)
+        webSocketTask = session?.webSocketTask(with: request)
+        webSocketTask?.resume()
+
+        statusCallback("connected")
+        receiveLoopBinary()
     }
 
     private func receiveLoop() {
@@ -121,6 +175,37 @@ import Foundation
         }
     }
 
+    private func receiveLoopBinary() {
+        webSocketTask?.receive { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                switch result {
+                case .success(let response):
+                    let payload: Data?
+                    switch response {
+                    case .data(let data):
+                        payload = data
+                    case .string(let text):
+                        payload = text.data(using: .utf8)
+                    @unknown default:
+                        payload = nil
+                    }
+
+                    if let payload {
+                        let base64 = payload.base64EncodedString()
+                        self.binaryMessageCallback?(base64)
+                    }
+
+                    self.receiveLoopBinary()
+                case .failure(let error):
+                    print("WebSocket receive error: \(error)")
+                    self.statusCallback?("disconnected")
+                    self.disconnect()
+                }
+            }
+        }
+    }
+
     @objc func sendMessage(_ message: String, completion: @escaping (String) -> Void) {
         guard let task = webSocketTask, task.state == .running else {
             completion("error:not_connected")
@@ -153,6 +238,26 @@ import Foundation
         }
     }
 
+    /// Send a binary message (base64 payload).
+    @objc func sendBinary(_ base64: String) {
+        guard let task = webSocketTask, task.state == .running else {
+            return
+        }
+
+        guard let data = Data(base64Encoded: base64) else {
+            statusCallback?("error:invalid_base64")
+            return
+        }
+
+        let wsMessage = URLSessionWebSocketTask.Message.data(data)
+        task.send(wsMessage) { error in
+            if let error = error {
+                print("WebSocket sendBinary error: \(error)")
+                self.statusCallback?("error:\(error.localizedDescription)")
+            }
+        }
+    }
+
     @objc func disconnect() {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
@@ -160,6 +265,7 @@ import Foundation
         session = nil
         statusCallback = nil
         messageCallback = nil
+        binaryMessageCallback = nil
         pendingCompletion = nil
     }
 }

@@ -6,8 +6,17 @@ declare let NativeModules: {
       statusCallback: (status: string) => void,
       messageCallback: (message: string) => void
     ): void;
+    // Binary-safe SpacetimeDB path: messageCallback receives base64 payload.
+    connectWithMessageHandler(
+      url: string,
+      protocol: string,
+      headersJson: string | null,
+      statusCallback: (status: string) => void,
+      messageCallbackBase64: (base64: string) => void
+    ): void;
     sendMessage(message: string, callback: (response: string) => void): void;
     sendMessageAsync(message: string): void;
+    sendBinary(base64: string): void;
     disconnect(): void;
   };
   HttpModule?: {
