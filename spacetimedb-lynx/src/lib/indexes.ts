@@ -1,7 +1,7 @@
 import type { RowType, table, UntypedTableDef } from './table';
 import type { ColumnMetadata, IndexTypes } from './type_builders';
 import type { CollapseTuple, Prettify } from './type_util';
-import { Range } from '../server/range';
+import { Range } from './range';
 import type { ColumnIsUnique } from './constraints';
 
 /**

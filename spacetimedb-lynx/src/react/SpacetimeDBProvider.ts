@@ -3,6 +3,7 @@ import {
   type DbConnectionImpl,
 } from '../sdk/db_connection_impl';
 import * as React from 'react';
+import { useSyncExternalStore } from 'use-sync-external-store/shim';
 import { SpacetimeDBContext } from './useSpacetimeDB';
 import type { ConnectionState } from './connection_state';
 import { ConnectionId } from '../lib/connection_id';
@@ -53,7 +54,7 @@ export function SpacetimeDBProvider<
     []
   );
 
-  const state = React.useSyncExternalStore(
+  const state = useSyncExternalStore(
     subscribe,
     getSnapshot,
     getServerSnapshot

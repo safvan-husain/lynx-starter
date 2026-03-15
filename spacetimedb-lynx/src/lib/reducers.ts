@@ -1,5 +1,5 @@
-import type { DbView } from '../server/db_view';
-import type { Random } from '../server/rng';
+import type { DbView } from './db_view';
+import type { Random } from './rng';
 import type { ConnectionId } from './connection_id';
 import type { Identity } from './identity';
 import { type UntypedSchemaDef } from './schema';
@@ -9,7 +9,8 @@ import {
   type InferTypeOfRow,
   type TypeBuilder,
 } from './type_builders';
-import { Uuid } from './uuid.ts';
+import { Uuid } from './uuid';
+import type { ModuleExport } from './module_export';
 
 /**
  * Helper to extract the parameter types from an object type
@@ -55,6 +56,15 @@ export type Reducer<S extends UntypedSchemaDef, Params extends ParamsObj> = (
   ctx: ReducerCtx<S>,
   payload: ParamsAsObject<Params>
 ) => void;
+
+/**
+ * Type of a reducer as exported from a schema (reducer + module export).
+ */
+export interface ReducerExport<
+  S extends UntypedSchemaDef,
+  Params extends ParamsObj,
+> extends Reducer<S, Params>,
+    ModuleExport {}
 
 /**
  * Authentication information for the caller of a reducer.

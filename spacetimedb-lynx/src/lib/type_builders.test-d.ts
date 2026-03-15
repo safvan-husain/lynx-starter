@@ -1,4 +1,4 @@
-import { t } from '../server';
+import { t } from './type_builders';
 import { type AlgebraicTypeVariants } from '..';
 import type {
   I32ColumnBuilder,

@@ -13,7 +13,7 @@ import type {
   ReadonlyRangedIndex,
   ReadonlyUniqueIndex,
 } from '../lib/indexes.ts';
-import type { Bound } from '../server/range.ts';
+import type { Bound } from '../lib/range';
 import type { Prettify } from '../lib/type_util.ts';
 
 export type Operation<

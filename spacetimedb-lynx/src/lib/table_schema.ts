@@ -1,4 +1,5 @@
-import type { ProcedureExport, ReducerExport } from '../server';
+import type { ProcedureExport } from './procedure_export';
+import type { ReducerExport } from './reducers';
 import type { ProductType } from './algebraic_type';
 import type { RawScheduleDefV10, RawTableDefV10 } from './autogen/types';
 import type { IndexOpts } from './indexes';

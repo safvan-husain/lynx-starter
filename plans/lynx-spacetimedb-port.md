@@ -1,6 +1,6 @@
 # Plan: SpacetimeDB Lynx Compatibility Port
 
-This document outlines the strategy for modifying the SpacetimeDB TypeScript SDK to run within the Lynx (ReactLynx) runtime environment.
+This document outlines the strategy for modifying the SpacetimeDB TypeScript SDK (spacetimedb-lynx) to run within the Lynx (ReactLynx) runtime environment.
 
 ## Goal
 Transform the SDK from a JIT-based browser/Node library into an interpreted, injection-friendly library compatible with React 17 and restricted native runtimes.
@@ -30,7 +30,7 @@ Lynx does not provide standard browser globals, and polyfills using `eval` or No
         .withWebSocketFactory((url) => new LynxNativeWebSocket(url))
         .build();
       ```
-    - Allow injecting a `URL` implementation if `globalThis.URL` is absent.
+    - Allow injecting a `URL` implementation.
 
 ## Phase 3: React 17 Compatibility
 Lynx currently uses React 17, but the SDK uses React 18 hooks.

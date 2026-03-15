@@ -1,10 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSyncExternalStore } from 'use-sync-external-store/shim';
 import { useSpacetimeDB } from './useSpacetimeDB';
 import { type EventContextInterface } from '../sdk/db_connection_impl';
 import type { ConnectionState } from './connection_state';
