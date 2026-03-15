@@ -1,6 +1,7 @@
+import { StdbUrl } from '../lib/url';
 import { BinaryReader, BinaryWriter } from '../';
 import { ClientMessage, ServerMessage } from './client_api/types';
-import type { WebsocketAdapter } from './websocket_decompress_adapter';
+import type { WebsocketAdapter, FetchFn } from './websocket_decompress_adapter';
 
 class WebsocketTestAdapter implements WebsocketAdapter {
   onclose: any;
@@ -48,13 +49,15 @@ class WebsocketTestAdapter implements WebsocketAdapter {
   }
 
   async createWebSocketFn(_args: {
-    url: URL;
+    url: StdbUrl;
     wsProtocol: string;
     nameOrAddress: string;
     authToken?: string;
     compression: 'gzip' | 'none';
     lightMode: boolean;
     confirmedReads?: boolean;
+    WS: any;
+    fetchFn: FetchFn;
   }): Promise<WebsocketTestAdapter> {
     return this;
   }

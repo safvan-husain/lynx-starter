@@ -6,12 +6,7 @@ export type { UseSpacetimeDBOptions, UseSpacetimeDBReturn } from './useSpacetime
 
 // Re-export spacetimedb-lynx types for convenience
 export type { 
-  TableUpdate, 
   ReducerEvent, 
-  SubscriptionCallback, 
-  ReducerCallback,
-  SpacetimeDBClient,
-  LynxWebSocket,
-  LynxHttpClient,
-  LynxHttpResponse
-} from 'spacetimedb-lynx';
+  Identity,
+  DbConnectionImpl
+} from 'spacetimedb-lynx/sdk';

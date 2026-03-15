@@ -42,7 +42,7 @@
       "default": "./dist/index.mjs"
     },
     "./sdk": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/sdk/index.d.ts",
       "import": "./dist/sdk/index.mjs",
       "require": "./dist/sdk/index.cjs",
       "default": "./dist/sdk/index.mjs"
@@ -70,13 +70,11 @@
   ],
   "dependencies": {
     "base64-js": "^1.5.1",
-    "headers-polyfill": "^4.0.3",
     "object-inspect": "^1.13.4",
     "prettier": "^3.3.3",
     "pure-rand": "^7.0.1",
     "safe-stable-stringify": "^2.5.0",
     "statuses": "^2.0.2",
-    "url-polyfill": "^1.1.14",
     "use-sync-external-store": "^1.2.0"
   },
   "peerDependencies": {

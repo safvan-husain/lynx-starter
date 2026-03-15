@@ -1,25 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from '@lynx-js/react';
-import type { SpacetimeDBClient } from 'spacetimedb-lynx';
+import type { DbConnectionImpl, Identity } from './index';
 import { getSpacetimeClient } from './client';
-import type { SpacetimeConfig } from './client';
+import type { SpacetimeConfig, SpacetimeClient } from './client';
 
 export interface UseSpacetimeDBOptions {
   config?: Partial<SpacetimeConfig>;
   autoConnect?: boolean;
-  onConnect?: () => void;
+  onConnect?: (identity: Identity, token: string) => void;
   onDisconnect?: () => void;
   onError?: (error: Error) => void;
 }
 
 export interface UseSpacetimeDBReturn {
-  client: SpacetimeDBClient | null;
+  client: DbConnectionImpl<any> | null;
   isConnected: boolean;
   isConnecting: boolean;
   error: Error | null;
   connect: () => Promise<void>;
   disconnect: () => void;
-  subscribeToTable: (tableName: string, callback?: (rows: Uint8Array[]) => void) => () => void;
-  callReducer: (name: string, argsBytes?: Uint8Array, callback?: (event: any) => void) => Promise<void>;
+  subscribeToTable: (tableName: string) => any;
+  callReducer: (name: string, argsBytes?: Uint8Array) => Promise<void>;
 }
 
 /**
@@ -33,19 +33,19 @@ export function useSpacetimeDB(options: UseSpacetimeDBOptions = {}): UseSpacetim
   const [error, setError] = useState<Error | null>(null);
 
   const wrapperRef = useRef(getSpacetimeClient(config));
-  const clientRef = useRef<SpacetimeDBClient | null>(null);
+  const clientRef = useRef<DbConnectionImpl<any> | null>(null);
 
   // Setup event handlers
   useEffect(() => {
     const wrapper = wrapperRef.current;
 
-    wrapper.onConnect(() => {
+    wrapper.onConnect((identity, token) => {
       const client = wrapper.getClient();
       clientRef.current = client;
       setIsConnected(true);
       setIsConnecting(false);
       setError(null);
-      onConnect?.();
+      onConnect?.(identity, token);
     });
 
     wrapper.onDisconnect(() => {
@@ -85,20 +85,20 @@ export function useSpacetimeDB(options: UseSpacetimeDBOptions = {}): UseSpacetim
     setIsConnecting(false);
   }, []);
 
-  const subscribeToTable = useCallback((tableName: string, callback?: (rows: Uint8Array[]) => void): (() => void) => {
+  const subscribeToTable = useCallback((tableName: string): any => {
     if (!clientRef.current) {
       console.warn('SpacetimeDB not connected. Call connect() first.');
-      return () => {}; // Return empty function instead of null
+      return () => {}; 
     }
-    return wrapperRef.current.subscribeToTable(tableName, callback);
+    return wrapperRef.current.subscribeToTable(tableName);
   }, []);
 
-  const callReducer = useCallback(async (name: string, argsBytes: Uint8Array = new Uint8Array(), callback?: (event: any) => void): Promise<void> => {
+  const callReducer = useCallback(async (name: string, argsBytes: Uint8Array = new Uint8Array()): Promise<void> => {
     if (!clientRef.current) {
       console.warn('SpacetimeDB not connected. Call connect() first.');
       return;
     }
-    return wrapperRef.current.callReducer(name, argsBytes, callback);
+    return wrapperRef.current.callReducer(name, argsBytes);
   }, []);
 
   // Auto-connect if requested

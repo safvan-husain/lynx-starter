@@ -1,5 +1,7 @@
+import { StdbUrl } from '../lib/url';
 import { decompress } from './decompress';
-import { resolveWS } from './ws';
+
+export type FetchFn = (input: string, init?: any) => Promise<any>;
 
 export interface WebsocketAdapter {
   send(msg: Uint8Array): void;
@@ -71,28 +73,35 @@ export class WebsocketDecompressAdapter implements WebsocketAdapter {
     compression,
     lightMode,
     confirmedReads,
+    WS,
+    fetchFn,
   }: {
-    url: URL;
+    url: StdbUrl;
     wsProtocol: string;
     nameOrAddress: string;
     authToken?: string;
     compression: 'gzip' | 'none';
     lightMode: boolean;
     confirmedReads?: boolean;
+    WS: any;
+    fetchFn: FetchFn;
   }): Promise<WebsocketDecompressAdapter> {
-    const headers = new Headers();
+    const headers = new Map<string, string>();
 
-    const WS = await resolveWS();
+    // WS and fetchFn are passed in the args
 
     // We swap our original token to a shorter-lived token
     // to avoid sending the original via query params.
     let temporaryAuthToken: string | undefined = undefined;
     if (authToken) {
       headers.set('Authorization', `Bearer ${authToken}`);
-      const tokenUrl = new URL('v1/identity/websocket-token', url);
+      const tokenUrl = new StdbUrl('v1/identity/websocket-token', url);
       tokenUrl.protocol = url.protocol === 'wss:' ? 'https:' : 'http:';
 
-      const response = await fetch(tokenUrl, { method: 'POST', headers });
+      const response = await fetchFn(tokenUrl.toString(), {
+        method: 'POST',
+        headers: Object.fromEntries(headers.entries()),
+      });
       if (response.ok) {
         const { token } = await response.json();
         temporaryAuthToken = token;
@@ -103,7 +112,7 @@ export class WebsocketDecompressAdapter implements WebsocketAdapter {
       }
     }
 
-    const databaseUrl = new URL(`v1/database/${nameOrAddress}/subscribe`, url);
+    const databaseUrl = new StdbUrl(`v1/database/${nameOrAddress}/subscribe`, url);
     if (temporaryAuthToken) {
       databaseUrl.searchParams.set('token', temporaryAuthToken);
     }

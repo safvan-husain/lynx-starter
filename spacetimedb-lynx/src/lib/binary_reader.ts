@@ -1,3 +1,5 @@
+import { getTextDecoder } from './text_encoding';
+
 export default class BinaryReader {
   /**
    * The DataView used to read values from the binary data.
@@ -180,6 +182,6 @@ export default class BinaryReader {
 
   readString(): string {
     const uint8Array = this.readUInt8Array();
-    return new TextDecoder('utf-8').decode(uint8Array);
+    return getTextDecoder().decode(uint8Array);
   }
 }

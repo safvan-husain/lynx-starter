@@ -1,3 +1,4 @@
+import { StdbUrl } from '../lib/url';
 import { DbConnectionImpl, type ConnectionEvent } from './db_connection_impl';
 import { EventEmitter } from './event_emitter';
 import type {
@@ -7,7 +8,7 @@ import type {
   RemoteModuleOf,
 } from '../';
 import { ensureMinimumVersionOrThrow } from './version';
-import { WebsocketDecompressAdapter } from './websocket_decompress_adapter';
+import { WebsocketDecompressAdapter, type FetchFn } from './websocket_decompress_adapter';
 
 /**
  * The database client connection to a SpacetimeDB server.
@@ -18,7 +19,7 @@ import { WebsocketDecompressAdapter } from './websocket_decompress_adapter';
  * did do this, they would just lose type safety on the RemoteModule.
  */
 export class DbConnectionBuilder<DbConnection extends DbConnectionImpl<any>> {
-  #uri?: URL;
+  #uri?: StdbUrl;
   #nameOrAddress?: string;
   #identity?: Identity;
   #token?: string;
@@ -27,6 +28,8 @@ export class DbConnectionBuilder<DbConnection extends DbConnectionImpl<any>> {
   #lightMode: boolean = false;
   #confirmedReads?: boolean;
   #createWSFn: typeof WebsocketDecompressAdapter.createWebSocketFn;
+  #WS?: any;
+  #fetchFn?: FetchFn;
 
   /**
    * Creates a new `DbConnectionBuilder` database client and set the initial parameters.
@@ -51,8 +54,8 @@ export class DbConnectionBuilder<DbConnection extends DbConnectionImpl<any>> {
    * @param uri The URI of the SpacetimeDB server to connect to.
    *
    **/
-  withUri(uri: string | URL): this {
-    this.#uri = new URL(uri);
+  withUri(uri: string | StdbUrl): this {
+    this.#uri = new StdbUrl(uri);
     return this;
   }
 
@@ -86,6 +89,16 @@ export class DbConnectionBuilder<DbConnection extends DbConnectionImpl<any>> {
     createWSFn: typeof WebsocketDecompressAdapter.createWebSocketFn
   ): this {
     this.#createWSFn = createWSFn;
+    return this;
+  }
+
+  withWS(WS: any): this {
+    this.#WS = WS;
+    return this;
+  }
+
+  withFetchFn(fetchFn: FetchFn): this {
+    this.#fetchFn = fetchFn;
     return this;
   }
 
@@ -265,6 +278,14 @@ export class DbConnectionBuilder<DbConnection extends DbConnectionImpl<any>> {
     // Ideally, it would be a compile time error, but I'm not sure how to accomplish that.
     ensureMinimumVersionOrThrow(this.remoteModule.versionInfo?.cliVersion);
 
+    if (!this.#WS) {
+      throw new Error('WebSocket implementation is required to connect to SpacetimeDB');
+    }
+
+    if (!this.#fetchFn) {
+      throw new Error('Fetch implementation is required to connect to SpacetimeDB');
+    }
+
     return this.dbConnectionCtor({
       uri: this.#uri,
       nameOrAddress: this.#nameOrAddress,
@@ -275,6 +296,8 @@ export class DbConnectionBuilder<DbConnection extends DbConnectionImpl<any>> {
       lightMode: this.#lightMode,
       confirmedReads: this.#confirmedReads,
       createWSFn: this.#createWSFn,
+      WS: this.#WS,
+      fetchFn: this.#fetchFn,
       remoteModule: this.remoteModule,
     });
   }

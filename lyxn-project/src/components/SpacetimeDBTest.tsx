@@ -37,20 +37,19 @@ export function SpacetimeDBTest() {
   useEffect(() => {
     const client = clientRef.current;
     // Set up event handlers
-    client.onConnect(() => {
+    client.onConnect((identity, token) => {
       setIsConnected(true);
       setIsConnecting(false);
       setConnectionStatus('Connected');
       setError(null);
 
       const c = client.getClient();
-      const id = c?.getIdentityBytes();
-      const cid = c?.getConnectionIdBytes();
-      const tok = c?.getToken();
+      const id = identity.toHexString();
+      const cid = c?.connectionId.toHexString();
 
-      setIdentityHex(id ? bytesToHex(id) : null);
-      setConnectionIdHex(cid ? bytesToHex(cid) : null);
-      setTokenLen(tok ? tok.length : null);
+      setIdentityHex(id);
+      setConnectionIdHex(cid ?? null);
+      setTokenLen(token ? token.length : null);
     });
 
     client.onDisconnect(() => {
@@ -101,9 +100,8 @@ export function SpacetimeDBTest() {
     if (isSubscribed) return;
     try {
       unsubscribeRef.current?.();
-      unsubscribeRef.current = clientRef.current.subscribeToTable(tableName, (rows) => {
-        setLastRowCount(rows.length);
-      });
+      const handle = clientRef.current.subscribeToTable(tableName);
+      unsubscribeRef.current = () => handle.unsubscribe();
       setIsSubscribed(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -119,9 +117,8 @@ export function SpacetimeDBTest() {
   const handleCallReducer = async () => {
     setLastReducerStatus(null);
     try {
-      await clientRef.current.callReducer(reducerName, new Uint8Array(), (event) => {
-        setLastReducerStatus(`${event.status}${event.error ? `: ${event.error}` : ''}`);
-      });
+      await clientRef.current.callReducer(reducerName, new Uint8Array());
+      setLastReducerStatus('Sent');
     } catch (e) {
       setLastReducerStatus(`error: ${e instanceof Error ? e.message : String(e)}`);
     }

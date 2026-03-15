@@ -1,4 +1,5 @@
 import { fromByteArray } from 'base64-js';
+import { getTextEncoder } from './text_encoding';
 
 const ArrayBufferPrototypeTransfer =
   ArrayBuffer.prototype.transfer ??
@@ -200,7 +201,7 @@ export default class BinaryWriter {
   }
 
   writeString(value: string): void {
-    const encoder = new TextEncoder();
+    const encoder = getTextEncoder();
     const encodedString = encoder.encode(value);
     this.writeUInt8Array(encodedString);
   }

@@ -1,3 +1,4 @@
+import { StdbUrl } from '../lib/url';
 import { ConnectionId, ProductBuilder, ProductType } from '../';
 import { AlgebraicType, type ComparablePrimitive } from '../';
 import { BinaryReader } from '../';
@@ -11,6 +12,7 @@ import {
   TableUpdateRows,
   UnsubscribeFlags,
 } from './client_api/types';
+import { type FetchFn } from './websocket_decompress_adapter.ts';
 import { ClientCache } from './client_cache.ts';
 import { DbConnectionBuilder } from './db_connection_builder.ts';
 import { INTERNAL_REMOTE_MODULE } from './internal.ts';
@@ -84,12 +86,14 @@ export type {
 export type ConnectionEvent = 'connect' | 'disconnect' | 'connectError';
 
 export type DbConnectionConfig<RemoteModule extends UntypedRemoteModule> = {
-  uri: URL;
+  uri: StdbUrl;
   nameOrAddress: string;
   identity?: Identity;
   token?: string;
   emitter: EventEmitter<ConnectionEvent>;
   createWSFn: typeof WebsocketDecompressAdapter.createWebSocketFn;
+  WS: any;
+  fetchFn: FetchFn;
   compression: 'gzip' | 'none';
   lightMode: boolean;
   confirmedReads?: boolean;
@@ -187,14 +191,13 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     compression,
     lightMode,
     confirmedReads,
+    WS,
+    fetchFn,
   }: DbConnectionConfig<RemoteModule>) {
     stdbLogger('info', 'Connecting to SpacetimeDB WS...');
 
-    // We use .toString() here because some versions of React Native contain a bug where the URL constructor
-    // incorrectly treats a URL instance as a plain string.
-    // This results in an attempt to call .endsWith() on it, leading to an error.
-    const url = new URL(uri.toString());
-    if (!/^wss?:/.test(uri.protocol)) {
+    const url = new StdbUrl(uri.toString());
+    if (!/^wss?:/.test(url.protocol)) {
       url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     }
 
@@ -251,6 +254,8 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       compression: compression,
       lightMode: lightMode,
       confirmedReads: confirmedReads,
+      WS: WS,
+      fetchFn: fetchFn,
     })
       .then(v => {
         this.ws = v;
