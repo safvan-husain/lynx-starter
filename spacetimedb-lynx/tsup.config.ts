@@ -18,7 +18,7 @@ export default defineConfig([
   {
     entry: { index: 'src/index.ts' },
     format: ['esm', 'cjs'],
-    target: 'es2022',
+    target: 'es2015',
     outDir: 'dist',
     dts: false,
     sourcemap: true,
@@ -34,7 +34,7 @@ export default defineConfig([
   {
     entry: { 'index.browser': 'src/index.ts' },
     format: ['esm'],
-    target: 'es2022',
+    target: 'es2015',
     outDir: 'dist',
     dts: false,
     sourcemap: true,
@@ -50,7 +50,7 @@ export default defineConfig([
   {
     entry: { index: 'src/react/index.ts' },
     format: ['esm', 'cjs'],
-    target: 'es2022',
+    target: 'es2015',
     outDir: 'dist/react',
     dts: false,
     sourcemap: true,
@@ -65,7 +65,7 @@ export default defineConfig([
   {
     entry: { index: 'src/react/index.ts' },
     format: ['esm'],
-    target: 'es2022',
+    target: 'es2015',
     outDir: 'dist/browser/react',
     dts: false,
     sourcemap: true,
@@ -80,7 +80,7 @@ export default defineConfig([
   {
     entry: { index: 'src/sdk/index.ts' },
     format: ['esm', 'cjs'],
-    target: 'es2022',
+    target: 'es2015',
     outDir: 'dist/sdk',
     dts: false,
     sourcemap: true,
@@ -96,7 +96,7 @@ export default defineConfig([
   {
     entry: { 'index.browser': 'src/sdk/index.ts' },
     format: ['esm'],
-    target: 'es2022',
+    target: 'es2015',
     outDir: 'dist/sdk',
     dts: false,
     sourcemap: true,

@@ -1,4 +1,4 @@
-export * from './SpacetimeDBProvider.ts';
-export { useSpacetimeDB } from './useSpacetimeDB.ts';
-export { useTable } from './useTable.ts';
-export { useReducer } from './useReducer.ts';
+export * from './SpacetimeDBProvider';
+export { useSpacetimeDB } from './useSpacetimeDB';
+export { useTable } from './useTable';
+export { useReducer } from './useReducer';

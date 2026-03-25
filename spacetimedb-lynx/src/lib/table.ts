@@ -242,7 +242,7 @@ export type ReadonlyTable<TableDef extends UntypedTableDef> = Prettify<
 
 export interface ReadonlyTableMethods<TableDef extends UntypedTableDef> {
   /** Returns the number of rows in the TX state. */
-  count(): bigint;
+  count(): number;
 
   /** Iterate over all rows in the TX state. Rust Iterator<Item=Row> → TS IterableIterator<Row>. */
   iter(): IteratorObject<Prettify<RowType<TableDef>>, undefined>;
@@ -397,7 +397,7 @@ export function table<Row extends RowObj, const Opts extends TableOpts<Row>>(
         minValue: undefined,
         maxValue: undefined,
         column: colIds.get(name)!,
-        increment: 1n,
+        increment: Number(1),
       });
     }
 

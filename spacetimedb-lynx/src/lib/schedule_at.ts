@@ -15,8 +15,8 @@ export type ScheduleAtAlgebraicType = {
 type ScheduleAtType = Interval | Time;
 
 export const ScheduleAt: {
-  interval: (micros: bigint) => ScheduleAtType;
-  time: (microsSinceUnixEpoch: bigint) => ScheduleAtType;
+  interval: (micros: number) => ScheduleAtType;
+  time: (microsSinceUnixEpoch: number) => ScheduleAtType;
   /**
    * Get the algebraic type representation of the {@link ScheduleAt} type.
    * @returns The algebraic type representation of the type.
@@ -26,10 +26,10 @@ export const ScheduleAt: {
     algebraicType: AlgebraicType
   ): algebraicType is ScheduleAtAlgebraicType;
 } = {
-  interval(value: bigint): ScheduleAtType {
+  interval(value: number): ScheduleAtType {
     return Interval(value);
   },
-  time(value: bigint): ScheduleAtType {
+  time(value: number): ScheduleAtType {
     return Time(value);
   },
   getAlgebraicType(): ScheduleAtAlgebraicType {
@@ -69,7 +69,7 @@ export type Interval = {
   tag: 'Interval';
   value: TimeDuration;
 };
-export const Interval = (micros: bigint): Interval => ({
+export const Interval = (micros: number): Interval => ({
   tag: 'Interval',
   value: new TimeDuration(micros),
 });
@@ -77,7 +77,7 @@ export type Time = {
   tag: 'Time';
   value: Timestamp;
 };
-export const Time = (microsSinceUnixEpoch: bigint): Time => ({
+export const Time = (microsSinceUnixEpoch: number): Time => ({
   tag: 'Time',
   value: new Timestamp(microsSinceUnixEpoch),
 });

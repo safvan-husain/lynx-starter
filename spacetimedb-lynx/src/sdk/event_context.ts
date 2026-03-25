@@ -1,9 +1,9 @@
-import type { InferTypeOfRow } from '../lib/type_builders.ts';
+import type { InferTypeOfRow } from '../lib/type_builders';
 import type { DbContext } from './db_context';
-import type { Event } from './event.ts';
-import type { ReducerEvent } from './reducer_event.ts';
-import type { ReducerEventInfo } from './reducers.ts';
-import type { UntypedRemoteModule } from './spacetime_module.ts';
+import type { Event } from './event';
+import type { ReducerEvent } from './reducer_event';
+import type { ReducerEventInfo } from './reducers';
+import type { UntypedRemoteModule } from './spacetime_module';
 
 export type UntypedEventContext = EventContextInterface<UntypedRemoteModule>;
 

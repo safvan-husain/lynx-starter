@@ -651,4 +651,4 @@ export const SumType = {
   },
 };
 
-export type ComparablePrimitive = number | string | boolean | bigint;
+export type ComparablePrimitive = number | string | boolean | number;

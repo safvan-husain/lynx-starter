@@ -6,7 +6,7 @@ type IntArray =
   | Uint16Array
   | Int32Array
   | Uint32Array
-  | BigInt64Array
+  | Float64Array
   | BigUint64Array;
 
 /**
@@ -45,7 +45,7 @@ export interface Random {
   integerInRange(min: number, max: number): number;
 
   /**
-   * Returns a bigint in the range `[min, max]`.
+   * Returns a number in the range `[min, max]`.
    */
-  bigintInRange(min: bigint, max: bigint): bigint;
+  numberInRange(min: number, max: number): number;
 }

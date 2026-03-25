@@ -12,16 +12,16 @@ export type IdentityAlgebraicType = {
  * A unique identifier for a user connected to a database.
  */
 export class Identity {
-  __identity__: bigint;
+  __identity__: number;
 
   /**
    * Creates a new `Identity`.
    *
-   * `data` can be a hexadecimal string or a `bigint`.
+   * `data` can be a hexadecimal string or a `number`.
    */
-  constructor(data: string | bigint) {
+  constructor(data: string | number) {
     // we get a JSON with __identity__ when getting a token with a JSON API
-    // and an bigint when using BSATN
+    // and an number when using BSATN
     this.__identity__ = typeof data === 'string' ? hexStringToU256(data) : data;
   }
 
@@ -74,7 +74,7 @@ export class Identity {
    * Zero identity (0x0000000000000000000000000000000000000000000000000000000000000000)
    */
   static zero(): Identity {
-    return new Identity(0n);
+    return new Identity(Number(0));
   }
 
   toString(): string {

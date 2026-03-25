@@ -12,12 +12,12 @@ export type ConnectionIdAlgebraicType = {
  * A unique identifier for a client connected to a database.
  */
 export class ConnectionId {
-  __connection_id__: bigint;
+  __connection_id__: number;
 
   /**
    * Creates a new `ConnectionId`.
    */
-  constructor(data: bigint) {
+  constructor(data: number) {
     this.__connection_id__ = data;
   }
 
@@ -34,7 +34,7 @@ export class ConnectionId {
   }
 
   isZero(): boolean {
-    return this.__connection_id__ === BigInt(0);
+    return this.__connection_id__ === Number(0);
   }
 
   static nullIfZero(addr: ConnectionId): ConnectionId | null {
@@ -49,9 +49,9 @@ export class ConnectionId {
     function randomU8(): number {
       return Math.floor(Math.random() * 0xff);
     }
-    let result = BigInt(0);
+    let result = Number(0);
     for (let i = 0; i < 16; i++) {
-      result = (result << BigInt(8)) | BigInt(randomU8());
+      result = (result << Number(8)) | Number(randomU8());
     }
     return new ConnectionId(result);
   }

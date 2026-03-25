@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSyncExternalStore } from 'use-sync-external-store/shim';
+// import { useSyncExternalStore } from 'use-sync-external-store/shim';
 import { useSpacetimeDB } from './useSpacetimeDB';
 import { type EventContextInterface } from '../sdk/db_connection_impl';
 import type { ConnectionState } from './connection_state';
@@ -222,5 +222,5 @@ export function useTable<TableDef extends UntypedTableDef>(
   }, [computeSnapshot]);
 
   // SSR fallback can be the same getter
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return [[], false] as any;
 }

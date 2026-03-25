@@ -1,5 +1,6 @@
 import { StdbUrl } from '../lib/url';
-import { BinaryReader, BinaryWriter } from '../';
+import BinaryReader from '../lib/binary_reader';
+import BinaryWriter from '../lib/binary_writer';
 import { ClientMessage, ServerMessage } from './client_api/types';
 import type { WebsocketAdapter, FetchFn } from './websocket_decompress_adapter';
 

@@ -26,7 +26,7 @@ type Row = InferTypeOfRow<typeof row>;
 const _row: Row = {
   foo: 'hello',
   bar: 42,
-  idx: 100n,
+  idx: 100,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

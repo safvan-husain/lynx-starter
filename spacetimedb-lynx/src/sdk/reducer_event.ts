@@ -1,6 +1,6 @@
-import { Timestamp } from '../';
+import { Timestamp } from '../lib/timestamp';
 import type { ReducerOutcome } from './client_api/types';
-import type { ReducerEventInfo } from './reducers.ts';
+import type { ReducerEventInfo } from './reducers';
 
 export type ReducerEvent<Reducer extends ReducerEventInfo> = {
   /**

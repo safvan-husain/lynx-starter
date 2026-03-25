@@ -43,14 +43,14 @@ export function uint8ArrayToHexString(array: Uint8Array): string {
     .join('');
 }
 
-export function uint8ArrayToU128(array: Uint8Array): bigint {
+export function uint8ArrayToU128(array: Uint8Array): number {
   if (array.length != 16) {
     throw new Error(`Uint8Array is not 16 bytes long: ${array}`);
   }
   return new BinaryReader(array).readU128();
 }
 
-export function uint8ArrayToU256(array: Uint8Array): bigint {
+export function uint8ArrayToU256(array: Uint8Array): number {
   if (array.length != 32) {
     throw new Error(`Uint8Array is not 32 bytes long: [${array}]`);
   }
@@ -68,31 +68,31 @@ export function hexStringToUint8Array(str: string): Uint8Array {
   return data.reverse();
 }
 
-export function hexStringToU128(str: string): bigint {
+export function hexStringToU128(str: string): number {
   return uint8ArrayToU128(hexStringToUint8Array(str));
 }
 
-export function hexStringToU256(str: string): bigint {
+export function hexStringToU256(str: string): number {
   return uint8ArrayToU256(hexStringToUint8Array(str));
 }
 
-export function u128ToUint8Array(data: bigint): Uint8Array {
+export function u128ToUint8Array(data: number): Uint8Array {
   const writer = new BinaryWriter(16);
   writer.writeU128(data);
   return writer.getBuffer();
 }
 
-export function u128ToHexString(data: bigint): string {
+export function u128ToHexString(data: number): string {
   return uint8ArrayToHexString(u128ToUint8Array(data));
 }
 
-export function u256ToUint8Array(data: bigint): Uint8Array {
+export function u256ToUint8Array(data: number): Uint8Array {
   const writer = new BinaryWriter(32);
   writer.writeU256(data);
   return writer.getBuffer();
 }
 
-export function u256ToHexString(data: bigint): string {
+export function u256ToHexString(data: number): string {
   return uint8ArrayToHexString(u256ToUint8Array(data));
 }
 

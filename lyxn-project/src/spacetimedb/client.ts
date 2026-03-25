@@ -27,7 +27,7 @@ const DEFAULT_CONFIG: SpacetimeConfig = {
 };
 
 class SpacetimeClientWrapper {
-  private connection: DbConnectionImpl<any> | null = null;
+  private connection: any | null = null;
   private config: SpacetimeConfig;
   private onConnectCallback: ((identity: Identity, token: string) => void) | null = null;
   private onDisconnectCallback: (() => void) | null = null;
@@ -37,7 +37,7 @@ class SpacetimeClientWrapper {
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
-  async connect(): Promise<DbConnectionImpl<any>> {
+  async connect(): Promise<any> {
     if (this.connection) {
       return this.connection;
     }
@@ -55,7 +55,7 @@ class SpacetimeClientWrapper {
           tables: {}, 
           reducers: [], 
           procedures: [],
-          versionInfo: { cliVersion: '1.0.0' } 
+          versionInfo: { cliVersion: '1.4.0' } 
         } as any, // Generic mock module for untyped client
         (config) => new DbConnectionImpl(config)
       )
@@ -64,6 +64,7 @@ class SpacetimeClientWrapper {
         .withToken(this.config.authToken)
         .withWS(LynxWebSocketAdapter)
         .withFetchFn(lynxFetch);
+      // const builder = null;
 
       builder.onConnect((conn, identity, token) => {
         console.log('[SpacetimeDB] Connected successfully!');
@@ -100,7 +101,7 @@ class SpacetimeClientWrapper {
     return this.connection !== null;
   }
 
-  getClient(): DbConnectionImpl<any> | null {
+  getClient(): any | null {
     return this.connection;
   }
 

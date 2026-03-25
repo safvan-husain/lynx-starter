@@ -1,5 +1,5 @@
 import { Timestamp } from './timestamp';
-import { AlgebraicType } from './algebraic_type.ts';
+import { AlgebraicType } from './algebraic_type';
 
 export type UuidAlgebraicType = {
   tag: 'Product';
@@ -32,7 +32,7 @@ type UuidVersion = 'Nil' | 'V4' | 'V7' | 'Max';
  * Internally represented as an unsigned 128-bit between 0 and `MAX_UUID_BIGINT`.
  */
 export class Uuid {
-  __uuid__: bigint;
+  __uuid__: number;
 
   /**
    * The nil UUID (all zeros).
@@ -45,8 +45,8 @@ export class Uuid {
    * );
    * ```
    */
-  static readonly NIL = new Uuid(0n);
-  static readonly MAX_UUID_BIGINT = 0xffffffffffffffffffffffffffffffffn;
+  static readonly NIL = new Uuid(0 as unknown as number);
+  static readonly MAX_UUID_BIGINT = 0x7fffffffffffffff as unknown as number; // Downsized from 128-bit to avoid RangeError in Lynx
   /**
    * The max UUID (all ones).
    *
@@ -66,9 +66,9 @@ export class Uuid {
    * @param u - Unsigned 128-bit integer
    * @throws {Error} If the value is outside the valid UUID range
    */
-  constructor(u: bigint) {
+  constructor(u: number) {
     // Must fit in exactly 16 bytes
-    if (u < 0n || u > Uuid.MAX_UUID_BIGINT) {
+    if (u < Number(0) || u > Uuid.MAX_UUID_BIGINT) {
       throw new Error('Invalid UUID: must be between 0 and `MAX_UUID_BIGINT`');
     }
     this.__uuid__ = u;
@@ -99,7 +99,7 @@ export class Uuid {
     const arr = new Uint8Array(bytes);
     arr[6] = (arr[6] & 0x0f) | 0x40; // version 4
     arr[8] = (arr[8] & 0x3f) | 0x80; // variant
-    return new Uuid(Uuid.bytesToBigInt(arr));
+    return new Uuid(Uuid.bytesToNumber(arr));
   }
 
   /**
@@ -164,20 +164,20 @@ export class Uuid {
 
     // 31-bit monotonic counter with wraparound
     const counterVal = counter.value;
-    counter.value = (counterVal + 1) & 0x7fff_ffff;
+    counter.value = (counterVal + 1) & 0x7fffffff;
 
     // 48-bit unix timestamp (ms)
-    const tsMs = now.toMillis() & 0xffff_ffff_ffffn;
+    const tsMs = now.toMillis() & Number('0xffffffffffff');
 
     const bytes = new Uint8Array(16);
 
     // unix_ts_ms (48 bits)
-    bytes[0] = Number((tsMs >> 40n) & 0xffn);
-    bytes[1] = Number((tsMs >> 32n) & 0xffn);
-    bytes[2] = Number((tsMs >> 24n) & 0xffn);
-    bytes[3] = Number((tsMs >> 16n) & 0xffn);
-    bytes[4] = Number((tsMs >> 8n) & 0xffn);
-    bytes[5] = Number(tsMs & 0xffn);
+    bytes[0] = Number((tsMs >> Number(40)) & Number("0xff"));
+    bytes[1] = Number((tsMs >> Number(32)) & Number("0xff"));
+    bytes[2] = Number((tsMs >> Number(24)) & Number("0xff"));
+    bytes[3] = Number((tsMs >> Number(16)) & Number("0xff"));
+    bytes[4] = Number((tsMs >> Number(8)) & Number("0xff"));
+    bytes[5] = Number(tsMs & Number("0xff"));
 
     // Counter bits (31 bits total)
     bytes[7] = (counterVal >>> 23) & 0xff;
@@ -197,7 +197,7 @@ export class Uuid {
     // Variant RFC4122
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
-    return new Uuid(Uuid.bytesToBigInt(bytes));
+    return new Uuid(Uuid.bytesToNumber(bytes));
   }
 
   /**
@@ -219,9 +219,9 @@ export class Uuid {
     const hex = s.replace(/-/g, '');
     if (hex.length !== 32) throw new Error('Invalid hex UUID');
 
-    let v = 0n;
+    let v = Number(0);
     for (let i = 0; i < 32; i += 2) {
-      v = (v << 8n) | BigInt(parseInt(hex.slice(i, i + 2), 16));
+      v = (v << Number(8)) | Number(parseInt(hex.slice(i, i + 2), 16));
     }
     return new Uuid(v);
   }
@@ -245,8 +245,8 @@ export class Uuid {
     );
   }
 
-  /** Convert to bigint (u128). */
-  asBigInt(): bigint {
+  /** Convert to number (u128). */
+  asNumber(): number {
     return this.__uuid__;
   }
 
@@ -255,17 +255,17 @@ export class Uuid {
     return Uuid.bigIntToBytes(this.__uuid__);
   }
 
-  private static bytesToBigInt(bytes: Uint8Array): bigint {
-    let result = 0n;
-    for (const b of bytes) result = (result << 8n) | BigInt(b);
+  private static bytesToNumber(bytes: Uint8Array): number {
+    let result = Number(0);
+    for (const b of bytes) result = (result << Number(8)) | Number(b);
     return result;
   }
 
-  private static bigIntToBytes(value: bigint): Uint8Array {
+  private static bigIntToBytes(value: number): Uint8Array {
     const bytes = new Uint8Array(16);
     for (let i = 15; i >= 0; i--) {
-      bytes[i] = Number(value & 0xffn);
-      value >>= 8n;
+      bytes[i] = Number(value & Number("0xff"));
+      value >>= Number(8);
     }
     return bytes;
   }

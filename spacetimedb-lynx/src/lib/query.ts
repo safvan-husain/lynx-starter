@@ -614,7 +614,7 @@ export type ColumnExprForValue<Table extends TypedTableDef, Value> = {
 type LiteralValue =
   | string
   | number
-  | bigint
+  | number
   | boolean
   | Identity
   | Timestamp
@@ -854,7 +854,7 @@ function literalValueToSql(value: unknown): string {
   }
   switch (typeof value) {
     case 'number':
-    case 'bigint':
+    case 'number':
       return String(value);
     case 'boolean':
       return value ? 'TRUE' : 'FALSE';
@@ -923,7 +923,7 @@ function resolveValue(
 }
 
 type TimestampLike = {
-  __timestamp_micros_since_unix_epoch__: bigint;
+  __timestamp_micros_since_unix_epoch__: number;
 };
 
 type HexSerializableLike = {
@@ -949,7 +949,7 @@ function isTimestampLike(value: unknown): value is TimestampLike {
   const micros = (value as Record<string, unknown>)[
     '__timestamp_micros_since_unix_epoch__'
   ];
-  return typeof micros === 'bigint';
+  return typeof micros === 'number';
 }
 
 // Exported for tests.

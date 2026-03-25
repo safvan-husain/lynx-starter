@@ -1,12 +1,8 @@
 import { StdbUrl } from '../lib/url';
-import { DbConnectionImpl, type ConnectionEvent } from './db_connection_impl';
+import { DbConnectionImpl, type ConnectionEvent, type DbConnectionConfig, type RemoteModuleOf } from './db_connection_impl';
 import { EventEmitter } from './event_emitter';
-import type {
-  DbConnectionConfig,
-  ErrorContextInterface,
-  Identity,
-  RemoteModuleOf,
-} from '../';
+import { type ErrorContextInterface } from './event_context';
+import { Identity } from '../lib/identity';
 import { ensureMinimumVersionOrThrow } from './version';
 import { WebsocketDecompressAdapter, type FetchFn } from './websocket_decompress_adapter';
 

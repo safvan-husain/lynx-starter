@@ -17,15 +17,15 @@ export type TimestampAlgebraicType = {
  * A point in time, represented as a number of microseconds since the Unix epoch.
  */
 export class Timestamp {
-  __timestamp_micros_since_unix_epoch__: bigint;
+  __timestamp_micros_since_unix_epoch__: number;
 
-  private static MICROS_PER_MILLIS: bigint = 1000n;
+  private static MICROS_PER_MILLIS: number = 1000 as unknown as number;
 
-  get microsSinceUnixEpoch(): bigint {
+  get microsSinceUnixEpoch(): number {
     return this.__timestamp_micros_since_unix_epoch__;
   }
 
-  constructor(micros: bigint) {
+  constructor(micros: number) {
     this.__timestamp_micros_since_unix_epoch__ = micros;
   }
 
@@ -64,7 +64,7 @@ export class Timestamp {
   /**
    * The Unix epoch, the midnight at the beginning of January 1, 1970, UTC.
    */
-  static UNIX_EPOCH: Timestamp = new Timestamp(0n);
+  static UNIX_EPOCH: Timestamp = new Timestamp(0 as unknown as number);
 
   /**
    * Get a `Timestamp` representing the execution environment's belief of the current moment in time.
@@ -74,8 +74,8 @@ export class Timestamp {
   }
 
   /** Convert to milliseconds since Unix epoch. */
-  toMillis(): bigint {
-    return this.microsSinceUnixEpoch / 1000n;
+  toMillis(): number {
+    return this.microsSinceUnixEpoch / Number(1000);
   }
 
   /**
@@ -83,7 +83,7 @@ export class Timestamp {
    */
   static fromDate(date: Date): Timestamp {
     const millis = date.getTime();
-    const micros = BigInt(millis) * Timestamp.MICROS_PER_MILLIS;
+    const micros = Number(millis) * Timestamp.MICROS_PER_MILLIS;
     return new Timestamp(micros);
   }
 
@@ -97,8 +97,8 @@ export class Timestamp {
     const micros = this.__timestamp_micros_since_unix_epoch__;
     const millis = micros / Timestamp.MICROS_PER_MILLIS;
     if (
-      millis > BigInt(Number.MAX_SAFE_INTEGER) ||
-      millis < BigInt(Number.MIN_SAFE_INTEGER)
+      millis > Number(Number.MAX_SAFE_INTEGER) ||
+      millis < Number(Number.MIN_SAFE_INTEGER)
     ) {
       throw new RangeError(
         "Timestamp is outside of the representable range of JS's Date"
@@ -120,8 +120,8 @@ export class Timestamp {
     const millis = micros / Timestamp.MICROS_PER_MILLIS;
 
     if (
-      millis > BigInt(Number.MAX_SAFE_INTEGER) ||
-      millis < BigInt(Number.MIN_SAFE_INTEGER)
+      millis > Number(Number.MAX_SAFE_INTEGER) ||
+      millis < Number(Number.MIN_SAFE_INTEGER)
     ) {
       throw new RangeError(
         'Timestamp is outside of the representable range for ISO string formatting'
@@ -132,7 +132,7 @@ export class Timestamp {
     const isoBase = date.toISOString(); // Format: '2025-02-17T10:30:45.123Z'
 
     // Extract the full 6 decimal places of microseconds
-    const microsRemainder = Math.abs(Number(micros % 1000000n));
+    const microsRemainder = Math.abs(Number(micros % Number(1000000)));
     const fractionalPart = String(microsRemainder).padStart(6, '0');
 
     // Replace the 3-digit millisecond part with the full 6-digit microsecond part

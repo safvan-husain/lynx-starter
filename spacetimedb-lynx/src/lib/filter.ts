@@ -71,7 +71,7 @@ export function evaluate<Column extends string>(
       if (typeof v === 'object') {
         // Value of the Column and passed Value are both a Uuid so do an integer comparison.
         if (v instanceof Uuid && expr.value instanceof Uuid) {
-          return v.asBigInt() === expr.value.asBigInt();
+          return v.asNumber() === expr.value.asNumber();
         }
         // Value of the Column is a Uuid but passed Value is a String so compare them via string.
         if (v instanceof Uuid && typeof expr.value === 'string') {

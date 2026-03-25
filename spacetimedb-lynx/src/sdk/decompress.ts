@@ -4,6 +4,10 @@ export async function decompress(
   type: 'gzip',
   chunkSize: number = 128 * 1024 // 128KB
 ): Promise<Uint8Array> {
+  if (typeof (globalThis as any).ReadableStream === 'undefined' || typeof (globalThis as any).DecompressionStream === 'undefined') {
+    throw new Error('DecompressionStream or ReadableStream not supported in this environment. Please use compression: "none" in your DbConnection configuration.');
+  }
+
   // Create a single ReadableStream to handle chunks
   let offset = 0;
   const readableStream = new ReadableStream({

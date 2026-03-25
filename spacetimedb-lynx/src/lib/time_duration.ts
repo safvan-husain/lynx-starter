@@ -13,9 +13,9 @@ export type TimeDurationAlgebraicType = {
  * A difference between two points in time, represented as a number of microseconds.
  */
 export class TimeDuration {
-  __time_duration_micros__: bigint;
+  __time_duration_micros__: number;
 
-  private static MICROS_PER_MILLIS: bigint = 1000n;
+  private static MICROS_PER_MILLIS: number = 1000 as unknown as number;
 
   /**
    * Get the algebraic type representation of the {@link TimeDuration} type.
@@ -49,7 +49,7 @@ export class TimeDuration {
     );
   }
 
-  get micros(): bigint {
+  get micros(): number {
     return this.__time_duration_micros__;
   }
 
@@ -57,12 +57,12 @@ export class TimeDuration {
     return Number(this.micros / TimeDuration.MICROS_PER_MILLIS);
   }
 
-  constructor(micros: bigint) {
+  constructor(micros: number) {
     this.__time_duration_micros__ = micros;
   }
 
   static fromMillis(millis: number): TimeDuration {
-    return new TimeDuration(BigInt(millis) * TimeDuration.MICROS_PER_MILLIS);
+    return new TimeDuration(Number(millis) * TimeDuration.MICROS_PER_MILLIS);
   }
 
   /** This outputs the same string format that we use in the host and in Rust modules */
@@ -70,8 +70,8 @@ export class TimeDuration {
     const micros = this.micros;
     const sign = micros < 0 ? '-' : '+';
     const pos = micros < 0 ? -micros : micros;
-    const secs = pos / 1_000_000n;
-    const micros_remaining = pos % 1_000_000n;
+    const secs = pos / Number(1000000);
+    const micros_remaining = pos % Number(1000000);
     return `${sign}${secs}.${String(micros_remaining).padStart(6, '0')}`;
   }
 }
