@@ -129,28 +129,40 @@ export default class BinaryWriter {
     this.offset += 4;
   }
 
-  writeI64(value: number): void {
-    // Stubbed
+  // Helper: write hex string as little-endian bytes. Hex is assumed to be big-endian (most significant nibble first).
+  #writeHexLE(hex: string, n: number): void {
+    this.expandBuffer(n);
+    const padded = hex.padStart(n * 2, '0');
+    for (let i = 0; i < n; i++) {
+      // hex is big-endian string, so byte 0 (least significant) starts at padded.length - 2
+      const byteHex = padded.slice(padded.length - (i + 1) * 2, padded.length - i * 2);
+      this.view.setUint8(this.offset + i, parseInt(byteHex, 16));
+    }
+    this.offset += n;
   }
 
-  writeU64(value: number): void {
-    // Stubbed
+  writeI64(value: string): void {
+    this.#writeHexLE(value, 8);
   }
 
-  writeU128(value: number): void {
-    // Stubbed
+  writeU64(value: string): void {
+    this.#writeHexLE(value, 8);
   }
 
-  writeI128(value: number): void {
-    // Stubbed
+  writeU128(value: string): void {
+    this.#writeHexLE(value, 16);
   }
 
-  writeU256(value: number): void {
-    // Stubbed
+  writeI128(value: string): void {
+    this.#writeHexLE(value, 16);
   }
 
-  writeI256(value: number): void {
-    // Stubbed
+  writeU256(value: string): void {
+    this.#writeHexLE(value, 32);
+  }
+
+  writeI256(value: string): void {
+    this.#writeHexLE(value, 32);
   }
 
   writeF32(value: number): void {

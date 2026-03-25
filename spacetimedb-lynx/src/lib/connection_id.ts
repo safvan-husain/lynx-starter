@@ -12,13 +12,17 @@ export type ConnectionIdAlgebraicType = {
  * A unique identifier for a client connected to a database.
  */
 export class ConnectionId {
-  __connection_id__: number;
+  __connection_id__: string;
 
   /**
    * Creates a new `ConnectionId`.
    */
-  constructor(data: number) {
-    this.__connection_id__ = data;
+  constructor(data: string | number) {
+    if (typeof data === 'number') {
+      this.__connection_id__ = data.toString(16).padStart(32, '0');
+    } else {
+      this.__connection_id__ = data.startsWith('0x') ? data.slice(2) : data;
+    }
   }
 
   /**
@@ -34,7 +38,7 @@ export class ConnectionId {
   }
 
   isZero(): boolean {
-    return this.__connection_id__ === Number(0);
+    return /^0+$/.test(this.__connection_id__);
   }
 
   static nullIfZero(addr: ConnectionId): ConnectionId | null {
@@ -46,12 +50,9 @@ export class ConnectionId {
   }
 
   static random(): ConnectionId {
-    function randomU8(): number {
-      return Math.floor(Math.random() * 0xff);
-    }
-    let result = Number(0);
-    for (let i = 0; i < 16; i++) {
-      result = (result << Number(8)) | Number(randomU8());
+    let result = '';
+    for (let i = 0; i < 32; i++) {
+      result += Math.floor(Math.random() * 16).toString(16);
     }
     return new ConnectionId(result);
   }
@@ -60,7 +61,7 @@ export class ConnectionId {
    * Compare two connection IDs for equality.
    */
   isEqual(other: ConnectionId): boolean {
-    return this.__connection_id__ == other.__connection_id__;
+    return this.__connection_id__ === other.__connection_id__;
   }
 
   /**
@@ -74,7 +75,7 @@ export class ConnectionId {
    * Print the connection ID as a hexadecimal string.
    */
   toHexString(): string {
-    return u128ToHexString(this.__connection_id__);
+    return this.__connection_id__;
   }
 
   /**
@@ -88,7 +89,7 @@ export class ConnectionId {
    * Parse a connection ID from a hexadecimal string.
    */
   static fromString(str: string): ConnectionId {
-    return new ConnectionId(hexStringToU128(str));
+    return new ConnectionId(str);
   }
 
   static fromStringOrNull(str: string): ConnectionId | null {

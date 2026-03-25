@@ -43,14 +43,14 @@ export function uint8ArrayToHexString(array: Uint8Array): string {
     .join('');
 }
 
-export function uint8ArrayToU128(array: Uint8Array): number {
+export function uint8ArrayToU128(array: Uint8Array): string {
   if (array.length != 16) {
     throw new Error(`Uint8Array is not 16 bytes long: ${array}`);
   }
   return new BinaryReader(array).readU128();
 }
 
-export function uint8ArrayToU256(array: Uint8Array): number {
+export function uint8ArrayToU256(array: Uint8Array): string {
   if (array.length != 32) {
     throw new Error(`Uint8Array is not 32 bytes long: [${array}]`);
   }
@@ -61,6 +61,10 @@ export function hexStringToUint8Array(str: string): Uint8Array {
   if (str.startsWith('0x')) {
     str = str.slice(2);
   }
+  // If there's an odd number of hex characters, pad it (e.g. 'abc' -> '0abc')
+  if (str.length % 2 !== 0) {
+    str = '0' + str;
+  }
   const matches = str.match(/.{1,2}/g) || [];
   const data = Uint8Array.from(
     matches.map((byte: string) => parseInt(byte, 16))
@@ -68,31 +72,31 @@ export function hexStringToUint8Array(str: string): Uint8Array {
   return data.reverse();
 }
 
-export function hexStringToU128(str: string): number {
+export function hexStringToU128(str: string): string {
   return uint8ArrayToU128(hexStringToUint8Array(str));
 }
 
-export function hexStringToU256(str: string): number {
+export function hexStringToU256(str: string): string {
   return uint8ArrayToU256(hexStringToUint8Array(str));
 }
 
-export function u128ToUint8Array(data: number): Uint8Array {
+export function u128ToUint8Array(data: string): Uint8Array {
   const writer = new BinaryWriter(16);
   writer.writeU128(data);
   return writer.getBuffer();
 }
 
-export function u128ToHexString(data: number): string {
+export function u128ToHexString(data: string): string {
   return uint8ArrayToHexString(u128ToUint8Array(data));
 }
 
-export function u256ToUint8Array(data: number): Uint8Array {
+export function u256ToUint8Array(data: string): Uint8Array {
   const writer = new BinaryWriter(32);
   writer.writeU256(data);
   return writer.getBuffer();
 }
 
-export function u256ToHexString(data: number): string {
+export function u256ToHexString(data: string): string {
   return uint8ArrayToHexString(u256ToUint8Array(data));
 }
 

@@ -565,14 +565,14 @@ export class U32Builder
 }
 
 export class U64Builder
-  extends TypeBuilder<number, AlgebraicTypeVariants.U64>
+  extends TypeBuilder<string, AlgebraicTypeVariants.U64>
   implements
-    Indexable<number, AlgebraicTypeVariants.U64>,
-    Uniqueable<number, AlgebraicTypeVariants.U64>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.U64>,
-    AutoIncrementable<number, AlgebraicTypeVariants.U64>,
-    Defaultable<number, AlgebraicTypeVariants.U64>,
-    Nameable<number, AlgebraicTypeVariants.U64>
+    Indexable<string, AlgebraicTypeVariants.U64>,
+    Uniqueable<string, AlgebraicTypeVariants.U64>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.U64>,
+    AutoIncrementable<string, AlgebraicTypeVariants.U64>,
+    Defaultable<string, AlgebraicTypeVariants.U64>,
+    Nameable<string, AlgebraicTypeVariants.U64>
 {
   constructor() {
     super(AlgebraicType.U64);
@@ -609,8 +609,8 @@ export class U64Builder
     );
   }
   default(
-    value: number
-  ): U64ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', number>> {
+    value: string
+  ): U64ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', string>> {
     return new U64ColumnBuilder(
       this,
       set(defaultMetadata, { defaultValue: value })
@@ -624,14 +624,14 @@ export class U64Builder
 }
 
 export class U128Builder
-  extends TypeBuilder<number, AlgebraicTypeVariants.U128>
+  extends TypeBuilder<string, AlgebraicTypeVariants.U128>
   implements
-    Indexable<number, AlgebraicTypeVariants.U128>,
-    Uniqueable<number, AlgebraicTypeVariants.U128>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.U128>,
-    AutoIncrementable<number, AlgebraicTypeVariants.U128>,
-    Defaultable<number, AlgebraicTypeVariants.U128>,
-    Nameable<number, AlgebraicTypeVariants.U128>
+    Indexable<string, AlgebraicTypeVariants.U128>,
+    Uniqueable<string, AlgebraicTypeVariants.U128>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.U128>,
+    AutoIncrementable<string, AlgebraicTypeVariants.U128>,
+    Defaultable<string, AlgebraicTypeVariants.U128>,
+    Nameable<string, AlgebraicTypeVariants.U128>
 {
   constructor() {
     super(AlgebraicType.U128);
@@ -671,8 +671,8 @@ export class U128Builder
     );
   }
   default(
-    value: number
-  ): U128ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', number>> {
+    value: string
+  ): U128ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', string>> {
     return new U128ColumnBuilder(
       this,
       set(defaultMetadata, { defaultValue: value })
@@ -686,14 +686,14 @@ export class U128Builder
 }
 
 export class U256Builder
-  extends TypeBuilder<number, AlgebraicTypeVariants.U256>
+  extends TypeBuilder<string, AlgebraicTypeVariants.U256>
   implements
-    Indexable<number, AlgebraicTypeVariants.U256>,
-    Uniqueable<number, AlgebraicTypeVariants.U256>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.U256>,
-    AutoIncrementable<number, AlgebraicTypeVariants.U256>,
-    Defaultable<number, AlgebraicTypeVariants.U256>,
-    Nameable<number, AlgebraicTypeVariants.U256>
+    Indexable<string, AlgebraicTypeVariants.U256>,
+    Uniqueable<string, AlgebraicTypeVariants.U256>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.U256>,
+    AutoIncrementable<string, AlgebraicTypeVariants.U256>,
+    Defaultable<string, AlgebraicTypeVariants.U256>,
+    Nameable<string, AlgebraicTypeVariants.U256>
 {
   constructor() {
     super(AlgebraicType.U256);
@@ -733,8 +733,8 @@ export class U256Builder
     );
   }
   default(
-    value: number
-  ): U256ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', number>> {
+    value: string
+  ): U256ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', string>> {
     return new U256ColumnBuilder(
       this,
       set(defaultMetadata, { defaultValue: value })
@@ -926,14 +926,14 @@ export class I32Builder
 }
 
 export class I64Builder
-  extends TypeBuilder<number, AlgebraicTypeVariants.I64>
+  extends TypeBuilder<string, AlgebraicTypeVariants.I64>
   implements
-    Indexable<number, AlgebraicTypeVariants.I64>,
-    Uniqueable<number, AlgebraicTypeVariants.I64>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.I64>,
-    AutoIncrementable<number, AlgebraicTypeVariants.I64>,
-    Defaultable<number, AlgebraicTypeVariants.I64>,
-    Nameable<number, AlgebraicTypeVariants.I64>
+    Indexable<string, AlgebraicTypeVariants.I64>,
+    Uniqueable<string, AlgebraicTypeVariants.I64>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.I64>,
+    AutoIncrementable<string, AlgebraicTypeVariants.I64>,
+    Defaultable<string, AlgebraicTypeVariants.I64>,
+    Nameable<string, AlgebraicTypeVariants.I64>
 {
   constructor() {
     super(AlgebraicType.I64);
@@ -970,8 +970,8 @@ export class I64Builder
     );
   }
   default(
-    value: number
-  ): I64ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', number>> {
+    value: string
+  ): I64ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', string>> {
     return new I64ColumnBuilder(
       this,
       set(defaultMetadata, { defaultValue: value })
@@ -985,14 +985,14 @@ export class I64Builder
 }
 
 export class I128Builder
-  extends TypeBuilder<number, AlgebraicTypeVariants.I128>
+  extends TypeBuilder<string, AlgebraicTypeVariants.I128>
   implements
-    Indexable<number, AlgebraicTypeVariants.I128>,
-    Uniqueable<number, AlgebraicTypeVariants.I128>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.I128>,
-    AutoIncrementable<number, AlgebraicTypeVariants.I128>,
-    Defaultable<number, AlgebraicTypeVariants.I128>,
-    Nameable<number, AlgebraicTypeVariants.I128>
+    Indexable<string, AlgebraicTypeVariants.I128>,
+    Uniqueable<string, AlgebraicTypeVariants.I128>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.I128>,
+    AutoIncrementable<string, AlgebraicTypeVariants.I128>,
+    Defaultable<string, AlgebraicTypeVariants.I128>,
+    Nameable<string, AlgebraicTypeVariants.I128>
 {
   constructor() {
     super(AlgebraicType.I128);
@@ -1032,8 +1032,8 @@ export class I128Builder
     );
   }
   default(
-    value: number
-  ): I128ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', number>> {
+    value: string
+  ): I128ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', string>> {
     return new I128ColumnBuilder(
       this,
       set(defaultMetadata, { defaultValue: value })
@@ -1047,14 +1047,14 @@ export class I128Builder
 }
 
 export class I256Builder
-  extends TypeBuilder<number, AlgebraicTypeVariants.I256>
+  extends TypeBuilder<string, AlgebraicTypeVariants.I256>
   implements
-    Indexable<number, AlgebraicTypeVariants.I256>,
-    Uniqueable<number, AlgebraicTypeVariants.I256>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.I256>,
-    AutoIncrementable<number, AlgebraicTypeVariants.I256>,
-    Defaultable<number, AlgebraicTypeVariants.I256>,
-    Nameable<number, AlgebraicTypeVariants.I256>
+    Indexable<string, AlgebraicTypeVariants.I256>,
+    Uniqueable<string, AlgebraicTypeVariants.I256>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.I256>,
+    AutoIncrementable<string, AlgebraicTypeVariants.I256>,
+    Defaultable<string, AlgebraicTypeVariants.I256>,
+    Nameable<string, AlgebraicTypeVariants.I256>
 {
   constructor() {
     super(AlgebraicType.I256);
@@ -1094,8 +1094,8 @@ export class I256Builder
     );
   }
   default(
-    value: number
-  ): I256ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', number>> {
+    value: string
+  ): I256ColumnBuilder<SetField<DefaultMetadata, 'defaultValue', string>> {
     return new I256ColumnBuilder(
       this,
       set(defaultMetadata, { defaultValue: value })
@@ -2311,16 +2311,16 @@ export class U32ColumnBuilder<
 }
 
 export class U64ColumnBuilder<
-    M extends ColumnMetadata<number> = DefaultMetadata,
+    M extends ColumnMetadata<string> = DefaultMetadata,
   >
-  extends ColumnBuilder<number, AlgebraicTypeVariants.U64, M>
+  extends ColumnBuilder<string, AlgebraicTypeVariants.U64, M>
   implements
-    Indexable<number, AlgebraicTypeVariants.U64>,
-    Uniqueable<number, AlgebraicTypeVariants.U64>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.U64>,
-    AutoIncrementable<number, AlgebraicTypeVariants.U64>,
-    Defaultable<number, AlgebraicTypeVariants.U64>,
-    Nameable<number, AlgebraicTypeVariants.U64>
+    Indexable<string, AlgebraicTypeVariants.U64>,
+    Uniqueable<string, AlgebraicTypeVariants.U64>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.U64>,
+    AutoIncrementable<string, AlgebraicTypeVariants.U64>,
+    Defaultable<string, AlgebraicTypeVariants.U64>,
+    Nameable<string, AlgebraicTypeVariants.U64>
 {
   index(): U64ColumnBuilder<SetField<M, 'indexType', 'btree'>>;
   index<N extends NonNullable<IndexTypes>>(
@@ -2353,8 +2353,8 @@ export class U64ColumnBuilder<
     );
   }
   default(
-    value: number
-  ): U64ColumnBuilder<SetField<M, 'defaultValue', number>> {
+    value: string
+  ): U64ColumnBuilder<SetField<M, 'defaultValue', string>> {
     return new U64ColumnBuilder(
       this.typeBuilder,
       set(this.columnMetadata, {
@@ -2373,16 +2373,16 @@ export class U64ColumnBuilder<
 }
 
 export class U128ColumnBuilder<
-    M extends ColumnMetadata<number> = DefaultMetadata,
+    M extends ColumnMetadata<string> = DefaultMetadata,
   >
-  extends ColumnBuilder<number, AlgebraicTypeVariants.U128, M>
+  extends ColumnBuilder<string, AlgebraicTypeVariants.U128, M>
   implements
-    Indexable<number, AlgebraicTypeVariants.U128>,
-    Uniqueable<number, AlgebraicTypeVariants.U128>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.U128>,
-    AutoIncrementable<number, AlgebraicTypeVariants.U128>,
-    Defaultable<number, AlgebraicTypeVariants.U128>,
-    Nameable<number, AlgebraicTypeVariants.U128>
+    Indexable<string, AlgebraicTypeVariants.U128>,
+    Uniqueable<string, AlgebraicTypeVariants.U128>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.U128>,
+    AutoIncrementable<string, AlgebraicTypeVariants.U128>,
+    Defaultable<string, AlgebraicTypeVariants.U128>,
+    Nameable<string, AlgebraicTypeVariants.U128>
 {
   index(): U128ColumnBuilder<SetField<M, 'indexType', 'btree'>>;
   index<N extends NonNullable<IndexTypes>>(
@@ -2415,8 +2415,8 @@ export class U128ColumnBuilder<
     );
   }
   default(
-    value: number
-  ): U128ColumnBuilder<SetField<M, 'defaultValue', number>> {
+    value: string
+  ): U128ColumnBuilder<SetField<M, 'defaultValue', string>> {
     return new U128ColumnBuilder(
       this.typeBuilder,
       set(this.columnMetadata, {
@@ -2435,16 +2435,16 @@ export class U128ColumnBuilder<
 }
 
 export class U256ColumnBuilder<
-    M extends ColumnMetadata<number> = DefaultMetadata,
+    M extends ColumnMetadata<string> = DefaultMetadata,
   >
-  extends ColumnBuilder<number, AlgebraicTypeVariants.U256, M>
+  extends ColumnBuilder<string, AlgebraicTypeVariants.U256, M>
   implements
-    Indexable<number, AlgebraicTypeVariants.U256>,
-    Uniqueable<number, AlgebraicTypeVariants.U256>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.U256>,
-    AutoIncrementable<number, AlgebraicTypeVariants.U256>,
-    Defaultable<number, AlgebraicTypeVariants.U256>,
-    Nameable<number, AlgebraicTypeVariants.U256>
+    Indexable<string, AlgebraicTypeVariants.U256>,
+    Uniqueable<string, AlgebraicTypeVariants.U256>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.U256>,
+    AutoIncrementable<string, AlgebraicTypeVariants.U256>,
+    Defaultable<string, AlgebraicTypeVariants.U256>,
+    Nameable<string, AlgebraicTypeVariants.U256>
 {
   index(): U256ColumnBuilder<SetField<M, 'indexType', 'btree'>>;
   index<N extends NonNullable<IndexTypes>>(
@@ -2477,8 +2477,8 @@ export class U256ColumnBuilder<
     );
   }
   default(
-    value: number
-  ): U256ColumnBuilder<SetField<M, 'defaultValue', number>> {
+    value: string
+  ): U256ColumnBuilder<SetField<M, 'defaultValue', string>> {
     return new U256ColumnBuilder(
       this.typeBuilder,
       set(this.columnMetadata, {
@@ -2679,16 +2679,16 @@ export class I32ColumnBuilder<
 }
 
 export class I64ColumnBuilder<
-    M extends ColumnMetadata<number> = DefaultMetadata,
+    M extends ColumnMetadata<string> = DefaultMetadata,
   >
-  extends ColumnBuilder<number, AlgebraicTypeVariants.I64, M>
+  extends ColumnBuilder<string, AlgebraicTypeVariants.I64, M>
   implements
-    Indexable<number, AlgebraicTypeVariants.I64>,
-    Uniqueable<number, AlgebraicTypeVariants.I64>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.I64>,
-    AutoIncrementable<number, AlgebraicTypeVariants.I64>,
-    Defaultable<number, AlgebraicTypeVariants.I64>,
-    Nameable<number, AlgebraicTypeVariants.I64>
+    Indexable<string, AlgebraicTypeVariants.I64>,
+    Uniqueable<string, AlgebraicTypeVariants.I64>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.I64>,
+    AutoIncrementable<string, AlgebraicTypeVariants.I64>,
+    Defaultable<string, AlgebraicTypeVariants.I64>,
+    Nameable<string, AlgebraicTypeVariants.I64>
 {
   index(): I64ColumnBuilder<SetField<M, 'indexType', 'btree'>>;
   index<N extends NonNullable<IndexTypes>>(
@@ -2721,8 +2721,8 @@ export class I64ColumnBuilder<
     );
   }
   default(
-    value: number
-  ): I64ColumnBuilder<SetField<M, 'defaultValue', number>> {
+    value: string
+  ): I64ColumnBuilder<SetField<M, 'defaultValue', string>> {
     return new I64ColumnBuilder(
       this.typeBuilder,
       set(this.columnMetadata, {
@@ -2741,16 +2741,16 @@ export class I64ColumnBuilder<
 }
 
 export class I128ColumnBuilder<
-    M extends ColumnMetadata<number> = DefaultMetadata,
+    M extends ColumnMetadata<string> = DefaultMetadata,
   >
-  extends ColumnBuilder<number, AlgebraicTypeVariants.I128, M>
+  extends ColumnBuilder<string, AlgebraicTypeVariants.I128, M>
   implements
-    Indexable<number, AlgebraicTypeVariants.I128>,
-    Uniqueable<number, AlgebraicTypeVariants.I128>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.I128>,
-    AutoIncrementable<number, AlgebraicTypeVariants.I128>,
-    Defaultable<number, AlgebraicTypeVariants.I128>,
-    Nameable<number, AlgebraicTypeVariants.I128>
+    Indexable<string, AlgebraicTypeVariants.I128>,
+    Uniqueable<string, AlgebraicTypeVariants.I128>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.I128>,
+    AutoIncrementable<string, AlgebraicTypeVariants.I128>,
+    Defaultable<string, AlgebraicTypeVariants.I128>,
+    Nameable<string, AlgebraicTypeVariants.I128>
 {
   index(): I128ColumnBuilder<SetField<M, 'indexType', 'btree'>>;
   index<N extends NonNullable<IndexTypes>>(
@@ -2783,8 +2783,8 @@ export class I128ColumnBuilder<
     );
   }
   default(
-    value: number
-  ): I128ColumnBuilder<SetField<M, 'defaultValue', number>> {
+    value: string
+  ): I128ColumnBuilder<SetField<M, 'defaultValue', string>> {
     return new I128ColumnBuilder(
       this.typeBuilder,
       set(this.columnMetadata, {
@@ -2803,16 +2803,16 @@ export class I128ColumnBuilder<
 }
 
 export class I256ColumnBuilder<
-    M extends ColumnMetadata<number> = DefaultMetadata,
+    M extends ColumnMetadata<string> = DefaultMetadata,
   >
-  extends ColumnBuilder<number, AlgebraicTypeVariants.I256, M>
+  extends ColumnBuilder<string, AlgebraicTypeVariants.I256, M>
   implements
-    Indexable<number, AlgebraicTypeVariants.I256>,
-    Uniqueable<number, AlgebraicTypeVariants.I256>,
-    PrimaryKeyable<number, AlgebraicTypeVariants.I256>,
-    AutoIncrementable<number, AlgebraicTypeVariants.I256>,
-    Defaultable<number, AlgebraicTypeVariants.I256>,
-    Nameable<number, AlgebraicTypeVariants.I256>
+    Indexable<string, AlgebraicTypeVariants.I256>,
+    Uniqueable<string, AlgebraicTypeVariants.I256>,
+    PrimaryKeyable<string, AlgebraicTypeVariants.I256>,
+    AutoIncrementable<string, AlgebraicTypeVariants.I256>,
+    Defaultable<string, AlgebraicTypeVariants.I256>,
+    Nameable<string, AlgebraicTypeVariants.I256>
 {
   index(): I256ColumnBuilder<SetField<M, 'indexType', 'btree'>>;
   index<N extends NonNullable<IndexTypes>>(
@@ -2845,8 +2845,8 @@ export class I256ColumnBuilder<
     );
   }
   default(
-    value: number
-  ): I256ColumnBuilder<SetField<M, 'defaultValue', number>> {
+    value: string
+  ): I256ColumnBuilder<SetField<M, 'defaultValue', string>> {
     return new I256ColumnBuilder(
       this.typeBuilder,
       set(this.columnMetadata, {

@@ -12,7 +12,7 @@ export type IdentityAlgebraicType = {
  * A unique identifier for a user connected to a database.
  */
 export class Identity {
-  __identity__: number;
+  __identity__: string;
 
   /**
    * Creates a new `Identity`.
@@ -21,8 +21,12 @@ export class Identity {
    */
   constructor(data: string | number) {
     // we get a JSON with __identity__ when getting a token with a JSON API
-    // and an number when using BSATN
-    this.__identity__ = typeof data === 'string' ? hexStringToU256(data) : data;
+    // and a string when using BSATN (which we've changed to return hex strings)
+    if (typeof data === 'number') {
+      this.__identity__ = data.toString(16).padStart(64, '0');
+    } else {
+      this.__identity__ = data.startsWith('0x') ? data.slice(2) : data;
+    }
   }
 
   /**
@@ -53,7 +57,7 @@ export class Identity {
    * Print the identity as a hexadecimal string.
    */
   toHexString(): string {
-    return u256ToHexString(this.__identity__);
+    return this.__identity__;
   }
 
   /**
@@ -74,7 +78,7 @@ export class Identity {
    * Zero identity (0x0000000000000000000000000000000000000000000000000000000000000000)
    */
   static zero(): Identity {
-    return new Identity(Number(0));
+    return new Identity('0'.repeat(64));
   }
 
   toString(): string {

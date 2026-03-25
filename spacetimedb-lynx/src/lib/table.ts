@@ -397,7 +397,7 @@ export function table<Row extends RowObj, const Opts extends TableOpts<Row>>(
         minValue: undefined,
         maxValue: undefined,
         column: colIds.get(name)!,
-        increment: Number(1),
+        increment: '1',
       });
     }
 

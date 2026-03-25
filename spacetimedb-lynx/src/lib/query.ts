@@ -854,7 +854,6 @@ function literalValueToSql(value: unknown): string {
   }
   switch (typeof value) {
     case 'number':
-    case 'number':
       return String(value);
     case 'boolean':
       return value ? 'TRUE' : 'FALSE';

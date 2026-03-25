@@ -29,122 +29,51 @@ type UuidVersion = 'Nil' | 'V4' | 'V7' | 'Max';
  * Supports UUID `Nil`, `Max`, `V4` (random), and `V7`
  * (timestamp + counter + random).
  *
- * Internally represented as an unsigned 128-bit between 0 and `MAX_UUID_BIGINT`.
+ * Internally represented as an unsigned 128-bit between 0 and `MAX_UUID`.
  */
 export class Uuid {
-  __uuid__: number;
+  __uuid__: string;
 
   /**
    * The nil UUID (all zeros).
-   *
-   * @example
-   * ```ts
-   * const uuid = Uuid.NIL;
-   * console.assert(
-   *   uuid.toString() === "00000000-0000-0000-0000-000000000000"
-   * );
-   * ```
    */
-  static readonly NIL = new Uuid(0 as unknown as number);
-  static readonly MAX_UUID_BIGINT = 0x7fffffffffffffff as unknown as number; // Downsized from 128-bit to avoid RangeError in Lynx
+  static readonly NIL = new Uuid('0'.repeat(32));
+  
   /**
    * The max UUID (all ones).
-   *
-   * @example
-   * ```ts
-   * const uuid = Uuid.MAX;
-   * console.assert(
-   *   uuid.toString() === "ffffffff-ffff-ffff-ffff-ffffffffffff"
-   * );
-   * ```
    */
-  static readonly MAX = new Uuid(Uuid.MAX_UUID_BIGINT);
+  static readonly MAX = new Uuid('f'.repeat(32));
 
   /**
    * Create a UUID from a raw 128-bit value.
    *
-   * @param u - Unsigned 128-bit integer
-   * @throws {Error} If the value is outside the valid UUID range
+   * @param u - Unsigned 128-bit integer hex string
    */
-  constructor(u: number) {
-    // Must fit in exactly 16 bytes
-    if (u < Number(0) || u > Uuid.MAX_UUID_BIGINT) {
-      throw new Error('Invalid UUID: must be between 0 and `MAX_UUID_BIGINT`');
+  constructor(u: string | number) {
+    if (typeof u === 'number') {
+      this.__uuid__ = u.toString(16).padStart(32, '0');
+    } else {
+      let hex = u.startsWith('0x') ? u.slice(2) : u;
+      hex = hex.replace(/-/g, '').toLowerCase();
+      this.__uuid__ = hex.padStart(32, '0');
     }
-    this.__uuid__ = u;
+    
+    if (this.__uuid__.length > 32) {
+      throw new Error('Invalid UUID: hex string too long for 128-bit');
+    }
   }
 
   /**
    * Create a UUID `v4` from explicit random bytes.
-   *
-   * This method assumes the bytes are already sufficiently random.
-   * It only sets the appropriate bits for the UUID version and variant.
-   *
-   * @param bytes - Exactly 16 random bytes
-   * @returns A UUID `v4`
-   * @throws {Error} If `bytes.length !== 16`
-   *
-   * @example
-   * ```ts
-   * const randomBytes = new Uint8Array(16);
-   * const uuid = Uuid.fromRandomBytesV4(randomBytes);
-   *
-   * console.assert(
-   *   uuid.toString() === "00000000-0000-4000-8000-000000000000"
-   * );
-   * ```
    */
   static fromRandomBytesV4(bytes: Uint8Array): Uuid {
     if (bytes.length !== 16) throw new Error('UUID v4 requires 16 bytes');
     const arr = new Uint8Array(bytes);
     arr[6] = (arr[6] & 0x0f) | 0x40; // version 4
     arr[8] = (arr[8] & 0x3f) | 0x80; // variant
-    return new Uuid(Uuid.bytesToNumber(arr));
+    return new Uuid(Uuid.bytesToHex(arr));
   }
 
-  /**
-   * Generate a UUID `v7` using a monotonic counter from `0` to `2^31 - 1`,
-   * a timestamp, and 4 random bytes.
-   *
-   * The counter wraps around on overflow.
-   *
-   * The UUID `v7` is structured as follows:
-   *
-   * ```ascii
-   * ┌───────────────────────────────────────────────┬───────────────────┐
-   * | B0  | B1  | B2  | B3  | B4  | B5              |         B6        |
-   * ├───────────────────────────────────────────────┼───────────────────┤
-   * |                 unix_ts_ms                    |      version 7    |
-   * └───────────────────────────────────────────────┴───────────────────┘
-   * ┌──────────────┬─────────┬──────────────────┬───────────────────────┐
-   * | B7           | B8      | B9  | B10 | B11  | B12 | B13 | B14 | B15 |
-   * ├──────────────┼─────────┼──────────────────┼───────────────────────┤
-   * | counter_high | variant |    counter_low   |        random         |
-   * └──────────────┴─────────┴──────────────────┴───────────────────────┘
-   * ```
-   *
-   * @param counter - Mutable monotonic counter (31-bit)
-   * @param now - Timestamp since the Unix epoch
-   * @param randomBytes - Exactly 4 random bytes
-   * @returns A UUID `v7`
-   *
-   * @throws {Error} If the `counter` is negative
-   * @throws {Error} If the `timestamp` is before the Unix epoch
-   * @throws {Error} If `randomBytes.length !== 4`
-   *
-   * @example
-   * ```ts
-   * const now = Timestamp.fromMillis(1_686_000_000_000n);
-   * const counter = { value: 1 };
-   * const randomBytes = new Uint8Array(4);
-   *
-   * const uuid = Uuid.fromCounterV7(counter, now, randomBytes);
-   *
-   * console.assert(
-   *   uuid.toString() === "0000647e-5180-7000-8000-000200000000"
-   * );
-   * ```
-   */
   static fromCounterV7(
     counter: { value: number },
     now: Timestamp,
@@ -154,32 +83,32 @@ export class Uuid {
       throw new Error('`fromCounterV7` requires `randomBytes.length == 4`');
     }
 
-    if (counter.value < 0) {
-      throw new Error('`fromCounterV7` uuid `counter` must be non-negative');
-    }
-
-    if (now.__timestamp_micros_since_unix_epoch__ < 0) {
-      throw new Error('`fromCounterV7` `timestamp` before unix epoch');
-    }
-
     // 31-bit monotonic counter with wraparound
     const counterVal = counter.value;
     counter.value = (counterVal + 1) & 0x7fffffff;
 
     // 48-bit unix timestamp (ms)
-    const tsMs = now.toMillis() & Number('0xffffffffffff');
+    // Timestamp.toMillis() now returns number (safe up to 53 bits)
+    const tsMs = now.toMillis();
 
     const bytes = new Uint8Array(16);
 
     // unix_ts_ms (48 bits)
-    bytes[0] = Number((tsMs >> Number(40)) & Number("0xff"));
-    bytes[1] = Number((tsMs >> Number(32)) & Number("0xff"));
-    bytes[2] = Number((tsMs >> Number(24)) & Number("0xff"));
-    bytes[3] = Number((tsMs >> Number(16)) & Number("0xff"));
-    bytes[4] = Number((tsMs >> Number(8)) & Number("0xff"));
-    bytes[5] = Number(tsMs & Number("0xff"));
+    // We treat tsMs as a 53-bit number, so we can shift it
+    bytes[0] = Math.floor(tsMs / Math.pow(2, 40)) & 0xff;
+    bytes[1] = Math.floor(tsMs / Math.pow(2, 32)) & 0xff;
+    bytes[2] = (tsMs >>> 24) & 0xff;
+    bytes[3] = (tsMs >>> 16) & 0xff;
+    bytes[4] = (tsMs >>> 8) & 0xff;
+    bytes[5] = tsMs & 0xff;
 
     // Counter bits (31 bits total)
+    // Part of high counter (7 bits) in byte 6?? No, v7 uses specific layout
+    // Actually our previous logic:
+    // bytes[6] version
+    // bytes[7] counter_high
+    // bytes[8] variant
+    // bytes[9,10,11] counter_low
     bytes[7] = (counterVal >>> 23) & 0xff;
     bytes[9] = (counterVal >>> 15) & 0xff;
     bytes[10] = (counterVal >>> 7) & 0xff;
@@ -197,41 +126,15 @@ export class Uuid {
     // Variant RFC4122
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
-    return new Uuid(Uuid.bytesToNumber(bytes));
+    return new Uuid(Uuid.bytesToHex(bytes));
   }
 
-  /**
-   * Parse a UUID from a string representation.
-   *
-   * @param s - UUID string
-   * @returns Parsed UUID
-   * @throws {Error} If the string is not a valid UUID
-   *
-   * @example
-   * ```ts
-   * const s = "01888d6e-5c00-7000-8000-000000000000";
-   * const uuid = Uuid.parse(s);
-   *
-   * console.assert(uuid.toString() === s);
-   * ```
-   */
   static parse(s: string): Uuid {
-    const hex = s.replace(/-/g, '');
-    if (hex.length !== 32) throw new Error('Invalid hex UUID');
-
-    let v = Number(0);
-    for (let i = 0; i < 32; i += 2) {
-      v = (v << Number(8)) | Number(parseInt(hex.slice(i, i + 2), 16));
-    }
-    return new Uuid(v);
+    return new Uuid(s);
   }
 
-  /** Convert to string (hyphenated form). */
   toString(): string {
-    const bytes = Uuid.bigIntToBytes(this.__uuid__);
-    const hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
-
-    // Format as 8-4-4-4-12
+    const hex = this.__uuid__;
     return (
       hex.slice(0, 8) +
       '-' +
@@ -245,93 +148,52 @@ export class Uuid {
     );
   }
 
-  /** Convert to number (u128). */
-  asNumber(): number {
-    return this.__uuid__;
-  }
-
-  /** Return a `Uint8Array` of 16 bytes. */
   toBytes(): Uint8Array {
-    return Uuid.bigIntToBytes(this.__uuid__);
-  }
-
-  private static bytesToNumber(bytes: Uint8Array): number {
-    let result = Number(0);
-    for (const b of bytes) result = (result << Number(8)) | Number(b);
-    return result;
-  }
-
-  private static bigIntToBytes(value: number): Uint8Array {
     const bytes = new Uint8Array(16);
-    for (let i = 15; i >= 0; i--) {
-      bytes[i] = Number(value & Number("0xff"));
-      value >>= Number(8);
+    for (let i = 0; i < 16; i++) {
+        bytes[i] = parseInt(this.__uuid__.slice(i * 2, i * 2 + 2), 16);
     }
     return bytes;
   }
 
-  /**
-   * Returns the version of this UUID.
-   *
-   * This represents the algorithm used to generate the value.
-   *
-   * @returns A `UuidVersion`
-   * @throws {Error} If the version field is not recognized
-   */
+  private static bytesToHex(bytes: Uint8Array): string {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   getVersion(): UuidVersion {
     const version = (this.toBytes()[6] >> 4) & 0x0f;
-
     switch (version) {
-      case 4:
-        return 'V4';
-      case 7:
-        return 'V7';
+      case 4: return 'V4';
+      case 7: return 'V7';
       default:
-        if (this == Uuid.NIL) {
-          return 'Nil';
-        }
-        if (this == Uuid.MAX) {
-          return 'Max';
-        }
+        if (this.isEqual(Uuid.NIL)) return 'Nil';
+        if (this.isEqual(Uuid.MAX)) return 'Max';
         throw new Error(`Unsupported UUID version: ${version}`);
     }
   }
 
-  /**
-   * Extract the monotonic counter from a UUIDv7.
-   *
-   * Intended for testing and diagnostics.
-   * Behavior is undefined if called on a non-V7 UUID.
-   *
-   * @returns 31-bit counter value
-   */
   getCounter(): number {
-    const bytes = this.toBytes(); // big-endian, 16 bytes
+    const bytes = this.toBytes();
+    const high = bytes[7];
+    const mid1 = bytes[9];
+    const mid2 = bytes[10];
+    const low = bytes[11] >>> 1;
+    return (high << 23) | (mid1 << 15) | (mid2 << 7) | low;
+  }
 
-    const high = bytes[7]; // bits 30..23
-    const mid1 = bytes[9]; // bits 22..15
-    const mid2 = bytes[10]; // bits 14..7
-    const low = bytes[11] >>> 1; // bits 6..0
-
-    // reconstruct 31-bit counter
-    return (high << 23) | (mid1 << 15) | (mid2 << 7) | low | 0; // force 32-bit int
+  isEqual(other: Uuid): boolean {
+    return this.__uuid__ === other.__uuid__;
   }
 
   compareTo(other: Uuid): number {
     if (this.__uuid__ < other.__uuid__) return -1;
     if (this.__uuid__ > other.__uuid__) return 1;
-
     return 0;
   }
 
   static getAlgebraicType(): UuidAlgebraicType {
     return AlgebraicType.Product({
-      elements: [
-        {
-          name: '__uuid__',
-          algebraicType: AlgebraicType.U128,
-        },
-      ],
+      elements: [{ name: '__uuid__', algebraicType: AlgebraicType.U128 }],
     });
   }
 }

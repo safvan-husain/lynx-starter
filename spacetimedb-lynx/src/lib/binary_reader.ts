@@ -91,28 +91,40 @@ export default class BinaryReader {
     return value;
   }
 
-  readI64(): number {
-    return Number(0); // Stubbed
+  // Read `n` bytes at current offset, return as big-endian hex string (no BigInt used)
+  #readHexLE(n: number): string {
+    this.#ensure(n);
+    let hex = '';
+    // Bytes are in little-endian order in the buffer, so we read from high to low to get BE hex
+    for (let i = n - 1; i >= 0; i--) {
+      hex += this.view.getUint8(this.offset + i).toString(16).padStart(2, '0');
+    }
+    this.offset += n;
+    return hex;
   }
 
-  readU64(): number {
-    return Number(0); // Stubbed
+  readI64(): string {
+    return this.#readHexLE(8);
   }
 
-  readU128(): number {
-    return Number(0); // Stubbed
+  readU64(): string {
+    return this.#readHexLE(8);
   }
 
-  readI128(): number {
-    return Number(0); // Stubbed
+  readU128(): string {
+    return this.#readHexLE(16);
   }
 
-  readU256(): number {
-    return Number(0); // Stubbed
+  readI128(): string {
+    return this.#readHexLE(16);
   }
 
-  readI256(): number {
-    return Number(0); // Stubbed
+  readU256(): string {
+    return this.#readHexLE(32);
+  }
+
+  readI256(): string {
+    return this.#readHexLE(32);
   }
 
   readF32(): number {
