@@ -185,19 +185,75 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     this.wsPromise = Promise.resolve(undefined); // Stubbed
   }
 
-  #getNextQueryId = () => 0;
-  #getNextRequestId = () => 0;
+  #getNextQueryId = () => {
+    const queryId = this.#queryId;
+    this.#queryId += 1;
+    return queryId;
+  };
+
+  #getNextRequestId = () => this.#requestId++;
 
   #makeDbView(): ClientDbView<RemoteModule> {
-    return {} as any; // Stubbed
+    const view = Object.create(null) as ClientDbView<RemoteModule>;
+
+    for (const tbl of Object.values(this.#sourceNameToTableDef)) {
+      const key = tbl.accessorName;
+      Object.defineProperty(view, key, {
+        enumerable: true,
+        configurable: false,
+        get: () => this.clientCache.getOrCreateTable(tbl as any),
+      });
+    }
+
+    return view;
   }
 
   #makeReducers(def: RemoteModule): ReducersView<RemoteModule> {
-    return {} as any; // Stubbed
+    const out: Record<string, unknown> = {};
+    const writer = new BinaryWriter(1024);
+
+    for (const reducer of def.reducers) {
+      const reducerName = reducer.name;
+      const key = reducer.accessorName;
+
+      const { serialize: serializeArgs } =
+        this.#reducerArgsSerializers[reducerName] || {};
+
+      (out as any)[key] = (params: any) => {
+        if (!serializeArgs) return Promise.resolve();
+        writer.clear();
+        serializeArgs(writer, params);
+        const argsBuffer = writer.getBuffer();
+        return this.callReducer(reducerName, argsBuffer, params);
+      };
+    }
+
+    return out as ReducersView<RemoteModule>;
   }
 
   #makeProcedures(def: RemoteModule): ProceduresView<RemoteModule> {
-    return {} as any; // Stubbed
+    const out: Record<string, unknown> = {};
+    const writer = new BinaryWriter(1024);
+
+    for (const procedure of def.procedures) {
+      const procedureName = procedure.name;
+      const key = procedure.accessorName;
+
+      const { serializeArgs, deserializeReturn } =
+        this.#procedureSerializers[procedureName] || {};
+
+      (out as any)[key] = (params: any): Promise<any> => {
+        if (!serializeArgs) return Promise.resolve({});
+        writer.clear();
+        serializeArgs(writer, params);
+        const argsBuffer = writer.getBuffer();
+        return this.callProcedure(procedureName, argsBuffer).then(returnBuf => {
+          return deserializeReturn(new BinaryReader(returnBuf));
+        });
+      };
+    }
+
+    return out as ProceduresView<RemoteModule>;
   }
 
   #makeEventContext(event: Event<any>): EventContextInterface<RemoteModule> {
@@ -227,11 +283,31 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     >,
     querySql: string[]
   ): number {
-    return 0; // Stubbed
+    const querySetId = this.#getNextQueryId();
+    this.#subscriptionManager.subscriptions.set(querySetId, {
+      handle,
+      emitter: handleEmitter,
+    });
+    const requestId = this.#getNextRequestId();
+    this.#sendMessage(
+      ClientMessage.Subscribe({
+        queryStrings: querySql,
+        querySetId: { id: querySetId },
+        requestId,
+      })
+    );
+    return querySetId;
   }
 
   unregisterSubscription(querySetId: number): void {
-    // Stubbed
+    const requestId = this.#getNextRequestId();
+    this.#sendMessage(
+      ClientMessage.Unsubscribe({
+        querySetId: { id: querySetId },
+        requestId,
+        flags: UnsubscribeFlags.SendDroppedRows,
+      })
+    );
   }
 
   #parseRowList(
@@ -259,12 +335,34 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   }
 
   #flushOutboundQueue(wsResolved: WebsocketAdapter): void {
-    // Stubbed
+    const pending = this.#outboundQueue.splice(0);
+    for (const message of pending) {
+      wsResolved.send(message);
+    }
   }
 
   #clientMessageEncoder = new BinaryWriter(1024);
   #sendMessage(message: ClientMessage): void {
-    // Stubbed
+    const writer = this.#clientMessageEncoder;
+    writer.clear();
+    ClientMessage.serialize(writer, message);
+    const encoded = writer.getBuffer();
+
+    if (this.ws && this.isActive) {
+      if (this.#outboundQueue.length) this.#flushOutboundQueue(this.ws);
+
+      stdbLogger(
+        'trace',
+        () => `Sending message to server: ${stringify(message)}`
+      );
+      this.ws.send(encoded);
+    } else {
+      stdbLogger(
+        'trace',
+        () => `Queuing message to server: ${stringify(message)}`
+      );
+      this.#outboundQueue.push(encoded.slice());
+    }
   }
 
   #nextEventId(): string {
@@ -272,7 +370,10 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   }
 
   #handleOnOpen(): void {
-    // Stubbed
+    this.isActive = true;
+    if (this.ws) {
+      this.#flushOutboundQueue(this.ws);
+    }
   }
 
   #applyTableUpdates(tableUpdates: any[], eventContext: any): any[] {
@@ -324,7 +425,11 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   }
 
   disconnect(): void {
-    // Stubbed
+    if (this.ws) {
+      this.ws.close();
+      this.ws = undefined;
+    }
+    this.isActive = false;
   }
 
   private on(

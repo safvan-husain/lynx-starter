@@ -1,7 +1,19 @@
-// @ts-ignore
-// import { fromByteArray } from 'base64-js';
+import { fromByteArray } from 'base64-js';
 import { getTextEncoder } from './text_encoding';
 
+const ArrayBufferPrototypeTransfer =
+  ArrayBuffer.prototype.transfer ??
+  function (this: ArrayBuffer, newByteLength: number) {
+    if (newByteLength === undefined) {
+      return this.slice(0);
+    } else if (newByteLength <= this.byteLength) {
+      return this.slice(0, newByteLength);
+    } else {
+      const copy = new Uint8Array(newByteLength);
+      copy.set(new Uint8Array(this));
+      return copy.buffer;
+    }
+  };
 export class ResizableBuffer {
   buffer: ArrayBuffer;
   view: DataView;
@@ -12,11 +24,13 @@ export class ResizableBuffer {
   }
 
   get capacity(): number {
-    return 0; // Stubbed
+    return this.buffer.byteLength;
   }
 
   grow(newSize: number) {
-    // Stubbed
+    if (newSize <= this.buffer.byteLength) return;
+    this.buffer = ArrayBufferPrototypeTransfer.call(this.buffer, newSize);
+    this.view = new DataView(this.buffer);
   }
 }
 
@@ -38,15 +52,19 @@ export default class BinaryWriter {
   }
 
   expandBuffer(additionalCapacity: number): void {
-    // Stubbed
+    const minCapacity = this.offset + additionalCapacity + 1;
+    if (minCapacity <= this.buffer.capacity) return;
+    let newCapacity = this.buffer.capacity * 2;
+    if (newCapacity < minCapacity) newCapacity = minCapacity;
+    this.buffer.grow(newCapacity);
   }
 
   toBase64(): string {
-    return ""; // Stubbed
+    return fromByteArray(this.getBuffer());
   }
 
   getBuffer(): Uint8Array {
-    return new Uint8Array(0); // Stubbed
+    return new Uint8Array(this.buffer.buffer, 0, this.offset);
   }
 
   get view() {
@@ -54,39 +72,61 @@ export default class BinaryWriter {
   }
 
   writeUInt8Array(value: Uint8Array): void {
-    // Stubbed
+    const length = value.length;
+
+    this.expandBuffer(4 + length);
+
+    this.writeU32(length);
+    new Uint8Array(this.buffer.buffer, this.offset).set(value);
+    this.offset += length;
   }
 
   writeBool(value: boolean): void {
-    // Stubbed
+    this.expandBuffer(1);
+    this.view.setUint8(this.offset, value ? 1 : 0);
+    this.offset += 1;
   }
 
   writeByte(value: number): void {
-    // Stubbed
+    this.expandBuffer(1);
+    this.view.setUint8(this.offset, value);
+    this.offset += 1;
   }
 
   writeI8(value: number): void {
-    // Stubbed
+    this.expandBuffer(1);
+    this.view.setInt8(this.offset, value);
+    this.offset += 1;
   }
 
   writeU8(value: number): void {
-    // Stubbed
+    this.expandBuffer(1);
+    this.view.setUint8(this.offset, value);
+    this.offset += 1;
   }
 
   writeI16(value: number): void {
-    // Stubbed
+    this.expandBuffer(2);
+    this.view.setInt16(this.offset, value, true);
+    this.offset += 2;
   }
 
   writeU16(value: number): void {
-    // Stubbed
+    this.expandBuffer(2);
+    this.view.setUint16(this.offset, value, true);
+    this.offset += 2;
   }
 
   writeI32(value: number): void {
-    // Stubbed
+    this.expandBuffer(4);
+    this.view.setInt32(this.offset, value, true);
+    this.offset += 4;
   }
 
   writeU32(value: number): void {
-    // Stubbed
+    this.expandBuffer(4);
+    this.view.setUint32(this.offset, value, true);
+    this.offset += 4;
   }
 
   writeI64(value: number): void {
@@ -114,15 +154,21 @@ export default class BinaryWriter {
   }
 
   writeF32(value: number): void {
-    // Stubbed
+    this.expandBuffer(4);
+    this.view.setFloat32(this.offset, value, true);
+    this.offset += 4;
   }
 
   writeF64(value: number): void {
-    // Stubbed
+    this.expandBuffer(8);
+    this.view.setFloat64(this.offset, value, true);
+    this.offset += 8;
   }
 
   writeString(value: string): void {
-    // Stubbed
+    const encoder = getTextEncoder();
+    const encodedString = encoder.encode(value);
+    this.writeUInt8Array(encodedString);
   }
 }
 

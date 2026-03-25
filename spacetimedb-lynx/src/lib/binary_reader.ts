@@ -18,47 +18,77 @@ export default class BinaryReader {
   }
 
   get remaining(): number {
-    return 0; // Stubbed
+    return this.view.byteLength - this.offset;
+  }
+
+  #ensure(n: number): void {
+    if (this.offset + n > this.view.byteLength) {
+      throw new RangeError(
+        `Tried to read ${n} byte(s) at relative offset ${this.offset}, but only ${this.remaining} byte(s) remain`
+      );
+    }
   }
 
   readUInt8Array(): Uint8Array {
-    return new Uint8Array(0); // Stubbed
+    const length = this.readU32();
+    this.#ensure(length);
+    return this.readBytes(length);
   }
 
   readBool(): boolean {
-    return false; // Stubbed
+    const value = this.view.getUint8(this.offset);
+    this.offset += 1;
+    return value !== 0;
   }
 
   readByte(): number {
-    return 0; // Stubbed
+    const value = this.view.getUint8(this.offset);
+    this.offset += 1;
+    return value;
   }
 
   readBytes(length: number): Uint8Array {
-    return new Uint8Array(0); // Stubbed
+    const array = new Uint8Array(
+      this.view.buffer,
+      this.view.byteOffset + this.offset,
+      length
+    );
+    this.offset += length;
+    return array;
   }
 
   readI8(): number {
-    return 0; // Stubbed
+    const value = this.view.getInt8(this.offset);
+    this.offset += 1;
+    return value;
   }
 
   readU8(): number {
-    return 0; // Stubbed
+    return this.readByte();
   }
 
   readI16(): number {
-    return 0; // Stubbed
+    const value = this.view.getInt16(this.offset, true);
+    this.offset += 2;
+    return value;
   }
 
   readU16(): number {
-    return 0; // Stubbed
+    const value = this.view.getUint16(this.offset, true);
+    this.offset += 2;
+    return value;
   }
 
   readI32(): number {
-    return 0; // Stubbed
+    const value = this.view.getInt32(this.offset, true);
+    this.offset += 4;
+    return value;
   }
 
   readU32(): number {
-    return 0; // Stubbed
+    const value = this.view.getUint32(this.offset, true);
+    this.offset += 4;
+    return value;
   }
 
   readI64(): number {
@@ -86,15 +116,20 @@ export default class BinaryReader {
   }
 
   readF32(): number {
-    return 0; // Stubbed
+    const value = this.view.getFloat32(this.offset, true);
+    this.offset += 4;
+    return value;
   }
 
   readF64(): number {
-    return 0; // Stubbed
+    const value = this.view.getFloat64(this.offset, true);
+    this.offset += 8;
+    return value;
   }
 
   readString(): string {
-    return ""; // Stubbed
+    const uint8Array = this.readUInt8Array();
+    return getTextDecoder().decode(uint8Array);
   }
 }
 
