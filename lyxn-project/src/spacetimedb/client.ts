@@ -36,6 +36,7 @@ type EmptyRemoteModule = RemoteModule<
 
 class SpacetimeClientWrapper {
   private connection: DbConnectionImpl<EmptyRemoteModule> | null = null;
+  private connected = false;
   private config: SpacetimeConfig;
   private onConnectCallback:
     | ((identity: Identity, token: string) => void)
@@ -49,10 +50,18 @@ class SpacetimeClientWrapper {
 
   async connect(): Promise<DbConnectionImpl<EmptyRemoteModule>> {
     if (this.connection) {
-      writeHostLog('info', '[SpacetimeDB] Reusing existing connection', {
+      if (this.connected) {
+        writeHostLog('info', '[SpacetimeDB] Reusing existing connection', {
+          source: 'SpacetimeClientWrapper',
+        });
+        return this.connection;
+      }
+
+      writeHostLog('warn', '[SpacetimeDB] Discarding stale connection', {
         source: 'SpacetimeClientWrapper',
       });
-      return this.connection;
+      this.connection.disconnect();
+      this.connection = null;
     }
 
     if (!this.config.database) {
@@ -86,6 +95,7 @@ class SpacetimeClientWrapper {
 
       builder.onConnect((_conn, identity, token) => {
         console.log('[SpacetimeDB] Connected successfully!');
+        this.connected = true;
         writeHostLog('info', '[SpacetimeDB] Connected successfully', {
           source: 'SpacetimeClientWrapper',
           identity: identity.toHexString(),
@@ -96,6 +106,8 @@ class SpacetimeClientWrapper {
 
       builder.onConnectError((_ctx, error) => {
         console.error('[SpacetimeDB] Connection error:', error);
+        this.connected = false;
+        this.connection = null;
         writeHostLog('error', '[SpacetimeDB] Connection error', {
           source: 'SpacetimeClientWrapper',
           error: error instanceof Error ? error.message : String(error),
@@ -105,6 +117,7 @@ class SpacetimeClientWrapper {
 
       builder.onDisconnect((_ctx, error) => {
         console.log('[SpacetimeDB] Disconnected', error);
+        this.connected = false;
         writeHostLog('warn', '[SpacetimeDB] Disconnected', {
           source: 'SpacetimeClientWrapper',
           error: error instanceof Error ? error.message : String(error),
@@ -133,10 +146,14 @@ class SpacetimeClientWrapper {
       this.connection.disconnect();
       this.connection = null;
     }
+    if (this.connected) {
+      this.connected = false;
+      this.onDisconnectCallback?.();
+    }
   }
 
   isConnected(): boolean {
-    return this.connection !== null;
+    return this.connected;
   }
 
   getClient(): DbConnectionImpl<EmptyRemoteModule> | null {

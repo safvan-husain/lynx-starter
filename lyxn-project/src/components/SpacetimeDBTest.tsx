@@ -127,6 +127,7 @@ export function SpacetimeDBTest() {
             serverUrl,
             databaseName,
           });
+          clientRef.current.disconnect();
           setIsConnecting(false);
           setConnectionStatus('Connection Timeout');
           setError(message);
