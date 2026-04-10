@@ -16,6 +16,8 @@ import Foundation
     private let messageQueueLock = NSLock()
 
     @objc func connect(url urlString: String, statusCallback: @escaping (String) -> Void) {
+        disconnect()
+
         self.statusCallback = statusCallback
         self.messageCallback = nil
         self.binaryMessageCallback = nil
@@ -24,8 +26,6 @@ import Foundation
             statusCallback("error:invalid_url")
             return
         }
-
-        disconnect()
 
         session = URLSession(configuration: .default)
         webSocketTask = session?.webSocketTask(with: url)
@@ -39,6 +39,8 @@ import Foundation
 
     /// Connect with message handler for bidirectional communication (SpacetimeDB)
     @objc func connect(url urlString: String, statusCallback: @escaping (String) -> Void, messageCallback: @escaping (String) -> Void) {
+        disconnect()
+
         self.statusCallback = statusCallback
         self.messageCallback = messageCallback
         self.binaryMessageCallback = nil
@@ -47,8 +49,6 @@ import Foundation
             statusCallback("error:invalid_url")
             return
         }
-
-        disconnect()
 
         session = URLSession(configuration: .default)
         webSocketTask = session?.webSocketTask(with: url)
@@ -66,6 +66,8 @@ import Foundation
     /// - protocol: WebSocket subprotocol (e.g. "v2.bsatn.spacetimedb"). Pass "" for none.
     /// - headersJson: JSON string object of headers, or nil.
     @objc func connectBinary(url urlString: String, `protocol` protocolString: String, headersJson: String?, statusCallback: @escaping (String) -> Void, messageCallback: @escaping (String) -> Void) {
+        disconnect()
+
         self.statusCallback = statusCallback
         self.messageCallback = nil
         self.binaryMessageCallback = messageCallback
@@ -75,9 +77,8 @@ import Foundation
             return
         }
 
-        disconnect()
-
         var request = URLRequest(url: url)
+        var hasCustomHeaders = false
 
         if !protocolString.isEmpty {
             // URLSessionWebSocketTask doesn't provide a URLRequest + protocols initializer on all iOS versions.
@@ -93,6 +94,7 @@ import Foundation
                         for (k, v) in dict {
                             if let s = v as? String {
                                 request.setValue(s, forHTTPHeaderField: k)
+                                hasCustomHeaders = true
                             }
                         }
                     }
@@ -104,11 +106,17 @@ import Foundation
         }
 
         session = URLSession(configuration: .default)
-        webSocketTask = session?.webSocketTask(with: request)
+        if !hasCustomHeaders && !protocolString.isEmpty {
+            print("WebSocket binary connect using URL + protocols: \(urlString), protocol: \(protocolString)")
+            webSocketTask = session?.webSocketTask(with: url, protocols: [protocolString])
+        } else {
+            print("WebSocket binary connect using URLRequest: \(urlString), protocol: \(protocolString), customHeaders: \(hasCustomHeaders)")
+            webSocketTask = session?.webSocketTask(with: request)
+        }
         webSocketTask?.resume()
 
-        statusCallback("connected")
         receiveLoopBinary()
+        statusCallback("connected")
     }
 
     private func receiveLoop() {
@@ -192,6 +200,7 @@ import Foundation
                     }
 
                     if let payload {
+                        print("WebSocket binary receive bytes: \(payload.count)")
                         let base64 = payload.base64EncodedString()
                         self.binaryMessageCallback?(base64)
                     }

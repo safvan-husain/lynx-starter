@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7C5D1A012D99B00100D0BEEF /* DebugLogModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C5D1A002D99B00100D0BEEF /* DebugLogModule.m */; };
 		F66E83EC613C4700822633B6 /* WebSocketModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 43A16A1A599C47EC89E344D3 /* WebSocketModule.m */; };
 		578A2D8328004A0387CA49FE /* WebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F3472941214B11A38351C8 /* WebSocketClient.swift */; };
 		2B94A3C92D6613730060892C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B94A3C82D6613730060892C /* AppDelegate.swift */; };
@@ -23,6 +24,8 @@
 /* Begin PBXFileReference section */
 		02A5F93822E0497AA769D0CD /* WebSocketModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketModule.h; sourceTree = "<group>"; };
 		43A16A1A599C47EC89E344D3 /* WebSocketModule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketModule.m; sourceTree = "<group>"; };
+		7C5D19FF2D99B00100D0BEEF /* DebugLogModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DebugLogModule.h; sourceTree = "<group>"; };
+		7C5D1A002D99B00100D0BEEF /* DebugLogModule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DebugLogModule.m; sourceTree = "<group>"; };
 		B3F3472941214B11A38351C8 /* WebSocketClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebSocketClient.swift; sourceTree = "<group>"; };
 		2B94A3C52D6613730060892C /* Hello-Lynx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Hello-Lynx.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B94A3C82D6613730060892C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -76,6 +79,8 @@
 			children = (
 				02A5F93822E0497AA769D0CD /* WebSocketModule.h */,
 				43A16A1A599C47EC89E344D3 /* WebSocketModule.m */,
+				7C5D19FF2D99B00100D0BEEF /* DebugLogModule.h */,
+				7C5D1A002D99B00100D0BEEF /* DebugLogModule.m */,
 				B3F3472941214B11A38351C8 /* WebSocketClient.swift */,
 				2B94A3C82D6613730060892C /* AppDelegate.swift */,
 				2B94A3CA2D6613730060892C /* SceneDelegate.swift */,
@@ -223,6 +228,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7C5D1A012D99B00100D0BEEF /* DebugLogModule.m in Sources */,
 				F66E83EC613C4700822633B6 /* WebSocketModule.m in Sources */,
 				578A2D8328004A0387CA49FE /* WebSocketClient.swift in Sources */,
 				2B94A3DD2D6614980060892C /* DemoLynxProvider.swift in Sources */,
