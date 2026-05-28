@@ -8,6 +8,12 @@
 lyxn-project/package-lock.json
 lyxn-project/node_modules/
 lyxn-project/dist/
+
+# Lynx bundles copied into native hosts (pnpm --dir lyxn-project build && sync:hosts)
+**/main.lynx.bundle
+
+# SpacetimeDB counter module (Rust/WASM build output)
+spacetimedb-counter/target/
 spacetimeDB-source/
 my_rust_logic/
 spacetimedb-dart/

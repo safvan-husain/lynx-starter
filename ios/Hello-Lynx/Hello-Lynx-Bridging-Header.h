@@ -5,4 +5,5 @@
 #import <Lynx/LynxTemplateProvider.h>
 #import <Lynx/LynxView.h>
 #import "DebugLogModule.h"
+#import "HttpModule.h"
 #import "WebSocketModule.h"

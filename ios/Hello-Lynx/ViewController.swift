@@ -9,7 +9,7 @@ class ViewController: UIViewController {
     // Register WebSocket module for SpacetimeDB support
     config.register(WebSocketModule.self)
     config.register(DebugLogModule.self)
-    // Note: HttpModule not registered - fetch polyfill will use XMLHttpRequest fallback
+    config.register(HttpModule.self)
 
     let lynxView = LynxView { builder in
       builder.config = config

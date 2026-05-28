@@ -9,6 +9,7 @@
     "dev": "rspeedy dev",
     "format": "biome format --write",
     "preview": "rspeedy preview",
+    "spacetime:generate": "bash ./scripts/generate-spacetimedb-bindings.sh",
     "sync:hosts": "bash ./scripts/sync-host-bundles.sh"
   },
   "dependencies": {
