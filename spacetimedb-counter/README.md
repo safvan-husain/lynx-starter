@@ -1,18 +1,18 @@
-# spacetimedb-counter
+# lynx-counter SpacetimeDB module
 
-Standalone SpacetimeDB module for the Lynx counter app.
+## Dev users (seeded on first init)
 
-## Local publish
+| Username | Password   | Role    |
+|----------|------------|---------|
+| admin    | admin123   | Admin   |
+| teacher  | teacher123 | Teacher |
+| student  | student123 | Student |
+| parent   | parent123  | Parent  |
 
-```bash
-spacetime publish lynx-counter \
-  --server http://127.0.0.1:3000 \
-  --module-path /Users/safvanhusain/code/mine/lynx-demo/spacetimedb-counter \
-  --yes
-```
+Passwords are hashed with BLAKE3 in-module (dev-oriented; use OIDC for production).
 
-## What it exposes
+## RBAC
 
-- table `counter`
-- reducer `increment_counter`
-- reducer `decrement_counter`
+- **student / parent**: view counter (read via SQL/subscription)
+- **teacher / admin**: increment and decrement
+- **admin**: reset counter, register new users

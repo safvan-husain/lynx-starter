@@ -9,6 +9,7 @@ class ViewController: UIViewController {
     // Register WebSocket module for SpacetimeDB support
     config.register(WebSocketModule.self)
     config.register(DebugLogModule.self)
+    config.register(StorageModule.self)
     config.register(HttpModule.self)
 
     let lynxView = LynxView { builder in

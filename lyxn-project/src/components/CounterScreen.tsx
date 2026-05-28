@@ -1,30 +1,49 @@
-import { useCounter, type CounterConnectionStatus } from '../spacetimedb';
+import {
+  canMutateCounter,
+  canResetCounter,
+  roleLabel,
+} from '../auth/roles';
+import type { UseAuthReturn } from '../auth/useAuth';
 import { colors, radius, spacing, typography } from '../design/tokens';
+import type { UseCounterReturn } from '../spacetimedb/useCounter';
+import type { UseSpacetimeConnectionReturn } from '../spacetimedb/useSpacetimeConnection';
 import { Button } from './ui/Button';
 import { StatusBadge, type StatusBadgeTone } from './ui/StatusBadge';
 
-const CONNECTION_BADGE: Record<
-  CounterConnectionStatus,
-  { label: string; tone: StatusBadgeTone }
-> = {
-  connecting: { label: 'Connecting', tone: 'info' },
-  connected: { label: 'Connected', tone: 'success' },
-  failed: { label: 'Offline', tone: 'error' },
+type CounterScreenProps = {
+  auth: UseAuthReturn;
+  counter: UseCounterReturn;
+  spacetime: UseSpacetimeConnectionReturn;
 };
 
-export function CounterScreen() {
-  const {
-    counterValue,
-    errorMessage,
-    isMutating,
-    retry,
-    decrement,
-    increment,
-    status,
-  } = useCounter();
+const COUNTER_STATUS_BADGE: Record<
+  UseCounterReturn['status'],
+  { label: string; tone: StatusBadgeTone }
+> = {
+  idle: { label: 'Waiting', tone: 'info' },
+  ready: { label: 'Live', tone: 'success' },
+  failed: { label: 'Error', tone: 'error' },
+};
 
-  const connectionBadge = CONNECTION_BADGE[status];
-  const canMutate = status === 'connected' && !isMutating;
+export function CounterScreen({
+  auth,
+  counter,
+  spacetime,
+}: CounterScreenProps) {
+  const user = auth.user!;
+  const counterBadge = COUNTER_STATUS_BADGE[counter.status];
+  const allowMutate =
+    canMutateCounter(user.role) &&
+    counter.status === 'ready' &&
+    spacetime.status === 'connected' &&
+    !counter.isMutating;
+  const allowReset =
+    canResetCounter(user.role) &&
+    counter.status === 'ready' &&
+    spacetime.status === 'connected' &&
+    !counter.isMutating;
+
+  const errorMessage = counter.errorMessage ?? spacetime.errorMessage;
 
   return (
     <view
@@ -67,10 +86,32 @@ export function CounterScreen() {
               marginTop: spacing.xs,
             }}
           >
-            Live value stored in SpacetimeDB and synced across clients.
+            Signed in as {user.username} ({roleLabel(user.role)}).
           </text>
         </view>
-        <StatusBadge label={connectionBadge.label} tone={connectionBadge.tone} />
+        <StatusBadge label={counterBadge.label} tone={counterBadge.tone} />
+      </view>
+
+      <view
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: spacing.md,
+        }}
+      >
+        <StatusBadge
+          label={spacetime.status === 'connected' ? 'Connected' : 'Offline'}
+          tone={spacetime.status === 'connected' ? 'success' : 'error'}
+        />
+        <Button
+          grow={false}
+          label="Sign out"
+          onPress={() => {
+            void auth.signOut();
+          }}
+          variant="ghost"
+        />
       </view>
 
       {errorMessage ? (
@@ -98,17 +139,6 @@ export function CounterScreen() {
           >
             {errorMessage}
           </text>
-        </view>
-      ) : null}
-
-      {status === 'failed' ? (
-        <view style={{ marginBottom: spacing.md }}>
-          <Button
-            grow={false}
-            label="Retry connection"
-            onPress={retry}
-            variant="ghost"
-          />
         </view>
       ) : null}
 
@@ -146,7 +176,7 @@ export function CounterScreen() {
             marginTop: spacing.sm,
           }}
         >
-          {counterValue}
+          {counter.counterValue}
         </text>
         <text
           style={{
@@ -158,69 +188,42 @@ export function CounterScreen() {
             marginTop: spacing.sm,
           }}
         >
-          {status === 'connected'
-            ? 'Updates sync automatically while you stay connected.'
-            : 'Connect to SpacetimeDB to load and update this count.'}
+          {canMutateCounter(user.role)
+            ? 'You can update this shared counter.'
+            : 'Your role can view this counter only.'}
         </text>
       </view>
 
-      <view
-        style={{
-          backgroundColor: colors.primarySubtle,
-          borderRadius: radius.md,
-          paddingLeft: spacing.md,
-          paddingRight: spacing.md,
-          paddingTop: spacing.md,
-          paddingBottom: spacing.md,
-          marginBottom: spacing.lg,
-        }}
-      >
-        <text
-          style={{
-            fontFamily: typography.labelMd.fontFamily,
-            fontSize: typography.labelMd.fontSize,
-            lineHeight: typography.labelMd.lineHeight,
-            fontWeight: typography.labelMd.fontWeight,
-            color: colors.primary,
-          }}
-        >
-          School Soft · Design preview
-        </text>
-        <text
-          style={{
-            fontFamily: typography.bodySm.fontFamily,
-            fontSize: typography.bodySm.fontSize,
-            lineHeight: typography.bodySm.lineHeight,
-            fontWeight: typography.bodySm.fontWeight,
-            color: colors.textSecondary,
-            marginTop: spacing.xs,
-          }}
-        >
-          Indigo + slate tokens, flat cards, and 44px touch targets from
-          DESIGN.md.
-        </text>
-      </view>
-
-      <view style={{ flexDirection: 'row' }}>
+      <view style={{ flexDirection: 'row', marginBottom: spacing.sm }}>
         <view style={{ flexGrow: 1, flexShrink: 1, marginRight: spacing.sm }}>
           <Button
-            disabled={!canMutate}
+            disabled={!allowMutate}
             grow={true}
             label="Decrease"
-            onPress={decrement}
+            onPress={counter.decrement}
             variant="secondary"
           />
         </view>
         <view style={{ flexGrow: 1, flexShrink: 1 }}>
           <Button
-            disabled={!canMutate}
+            disabled={!allowMutate}
             grow={true}
             label="Increase"
-            onPress={increment}
+            onPress={counter.increment}
             variant="primary"
           />
         </view>
       </view>
+
+      {canResetCounter(user.role) ? (
+        <Button
+          disabled={!allowReset}
+          grow={true}
+          label="Reset counter"
+          onPress={counter.reset}
+          variant="secondary"
+        />
+      ) : null}
     </view>
   );
 }

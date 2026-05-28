@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		7C5D1A012D99B00100D0BEEF /* DebugLogModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C5D1A002D99B00100D0BEEF /* DebugLogModule.m */; };
+		7C5D1A032D99B00200D0BEEF /* StorageModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C5D1A022D99B00200D0BEEF /* StorageModule.m */; };
 		7C5D1A032D99B00100D0BEEF /* HttpModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C5D1A052D99B00100D0BEEF /* HttpModule.m */; };
 		F66E83EC613C4700822633B6 /* WebSocketModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 43A16A1A599C47EC89E344D3 /* WebSocketModule.m */; };
 		578A2D8328004A0387CA49FE /* WebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F3472941214B11A38351C8 /* WebSocketClient.swift */; };
@@ -27,6 +28,8 @@
 		43A16A1A599C47EC89E344D3 /* WebSocketModule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketModule.m; sourceTree = "<group>"; };
 		7C5D19FF2D99B00100D0BEEF /* DebugLogModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DebugLogModule.h; sourceTree = "<group>"; };
 		7C5D1A002D99B00100D0BEEF /* DebugLogModule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DebugLogModule.m; sourceTree = "<group>"; };
+		7C5D1A022D99B00200D0BEEF /* StorageModule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StorageModule.m; sourceTree = "<group>"; };
+		7C5D1A042D99B00200D0BEEF /* StorageModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StorageModule.h; sourceTree = "<group>"; };
 		7C5D1A042D99B00100D0BEEF /* HttpModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HttpModule.h; sourceTree = "<group>"; };
 		7C5D1A052D99B00100D0BEEF /* HttpModule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HttpModule.m; sourceTree = "<group>"; };
 		B3F3472941214B11A38351C8 /* WebSocketClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebSocketClient.swift; sourceTree = "<group>"; };
@@ -84,6 +87,8 @@
 				43A16A1A599C47EC89E344D3 /* WebSocketModule.m */,
 				7C5D19FF2D99B00100D0BEEF /* DebugLogModule.h */,
 				7C5D1A002D99B00100D0BEEF /* DebugLogModule.m */,
+				7C5D1A042D99B00200D0BEEF /* StorageModule.h */,
+				7C5D1A022D99B00200D0BEEF /* StorageModule.m */,
 				7C5D1A042D99B00100D0BEEF /* HttpModule.h */,
 				7C5D1A052D99B00100D0BEEF /* HttpModule.m */,
 				B3F3472941214B11A38351C8 /* WebSocketClient.swift */,
@@ -234,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7C5D1A012D99B00100D0BEEF /* DebugLogModule.m in Sources */,
+				7C5D1A032D99B00200D0BEEF /* StorageModule.m in Sources */,
 				7C5D1A032D99B00100D0BEEF /* HttpModule.m in Sources */,
 				F66E83EC613C4700822633B6 /* WebSocketModule.m in Sources */,
 				578A2D8328004A0387CA49FE /* WebSocketClient.swift in Sources */,

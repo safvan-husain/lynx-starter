@@ -1,6 +1,15 @@
 export {
   COUNTER_DATABASE_NAME,
   COUNTER_SERVER_URL,
-  useCounter,
+} from './connectionConfig';
+export { useCounter } from './useCounter';
+export type {
+  CounterConnectionStatus,
+  UseCounterOptions,
+  UseCounterReturn,
 } from './useCounter';
-export type { CounterConnectionStatus, UseCounterReturn } from './useCounter';
+export { useSpacetimeConnection } from './useSpacetimeConnection';
+export type {
+  SpacetimeConnectionStatus,
+  UseSpacetimeConnectionReturn,
+} from './useSpacetimeConnection';

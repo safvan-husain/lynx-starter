@@ -37,16 +37,49 @@ import {
 // Import all reducer arg schemas
 import DecrementCounterReducer from "./decrement_counter_reducer";
 import IncrementCounterReducer from "./increment_counter_reducer";
+import LoginReducer from "./login_reducer";
+import LogoutReducer from "./logout_reducer";
+import RegisterReducer from "./register_reducer";
+import ResetCounterReducer from "./reset_counter_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import AppUserRow from "./app_user_table";
+import AuthSessionRow from "./auth_session_table";
 import CounterRow from "./counter_table";
+import LoginAttemptRow from "./login_attempt_table";
 
 /** Type-only namespace exports for generated type groups. */
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema: any = __schema({
+  app_user: __table({
+    name: 'app_user',
+    indexes: [
+      { accessor: 'user_id', name: 'user_id', algorithm: 'btree', columns: [
+        'userId',
+      ] },
+      { accessor: 'username', name: 'username', algorithm: 'btree', columns: [
+        'username',
+      ] },
+    ],
+    constraints: [
+      { name: 'app_user_user_id_key', constraint: 'unique', columns: ['userId'] },
+      { name: 'app_user_username_key', constraint: 'unique', columns: ['username'] },
+    ],
+  }, AppUserRow),
+  auth_session: __table({
+    name: 'auth_session',
+    indexes: [
+      { accessor: 'identity', name: 'identity', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+    ],
+    constraints: [
+      { name: 'auth_session_identity_key', constraint: 'unique', columns: ['identity'] },
+    ],
+  }, AuthSessionRow),
   counter: __table({
     name: 'counter',
     indexes: [
@@ -58,12 +91,27 @@ const tablesSchema: any = __schema({
       { name: 'counter_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, CounterRow),
+  login_attempt: __table({
+    name: 'login_attempt',
+    indexes: [
+      { accessor: 'identity', name: 'identity', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+    ],
+    constraints: [
+      { name: 'login_attempt_identity_key', constraint: 'unique', columns: ['identity'] },
+    ],
+  }, LoginAttemptRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema: any = __reducers(
   __reducerSchema("decrement_counter", DecrementCounterReducer),
   __reducerSchema("increment_counter", IncrementCounterReducer),
+  __reducerSchema("login", LoginReducer),
+  __reducerSchema("logout", LogoutReducer),
+  __reducerSchema("register", RegisterReducer),
+  __reducerSchema("reset_counter", ResetCounterReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

@@ -41,6 +41,15 @@ declare let NativeModules: {
     getLogFilePath(callback: (path: string) => void): void;
     clear(callback?: (path: string) => void): void;
   };
+  StorageModule?: {
+    getItem: (key: string, callback: (value: string) => void) => void;
+    setItem: (
+      key: string,
+      value: string,
+      callback: (result: string) => void,
+    ) => void;
+    removeItem: (key: string, callback: (result: string) => void) => void;
+  };
 };
 
 declare let SystemInfo: {

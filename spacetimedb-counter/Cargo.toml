@@ -8,3 +8,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 spacetimedb = "2.0.3"
+blake3 = "1.8"
