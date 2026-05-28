@@ -1,14 +1,17 @@
 import { useState } from '@lynx-js/react';
-import { colors, radius, spacing, typography } from '../design/tokens';
+import {
+  getConnectionStatusPresentation,
+  isConnectionReady,
+} from '../auth/session';
 import type { UseAuthReturn } from '../auth/useAuth';
-import type { UseSpacetimeConnectionReturn } from '../spacetimedb/useSpacetimeConnection';
+import { colors, radius, spacing, typography } from '../design/tokens';
+import { useSpacetimeConnection } from '../spacetimedb/useSpacetimeConnection';
 import { Button } from './ui/Button';
 import { StatusBadge } from './ui/StatusBadge';
 
 type AuthScreenProps = {
   auth: UseAuthReturn;
   onCreateAccount: () => void;
-  spacetime: UseSpacetimeConnectionReturn;
 };
 
 const DEV_ACCOUNTS = [
@@ -18,27 +21,17 @@ const DEV_ACCOUNTS = [
   { label: 'Parent', username: 'parent', password: 'parent123' },
 ] as const;
 
-export function AuthScreen({ auth, onCreateAccount, spacetime }: AuthScreenProps) {
+export function AuthScreen({ auth, onCreateAccount }: AuthScreenProps) {
+  const spacetime = useSpacetimeConnection();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const connectionTone =
-    spacetime.status === 'connected'
-      ? 'success'
-      : spacetime.status === 'failed'
-        ? 'error'
-        : 'info';
-
-  const connectionLabel =
-    spacetime.status === 'connected'
-      ? 'Database connected'
-      : spacetime.status === 'failed'
-        ? 'Database offline'
-        : 'Connecting…';
+  const { label: connectionLabel, tone: connectionTone } =
+    getConnectionStatusPresentation(spacetime);
 
   const isSigningIn = auth.status === 'signingIn';
   const canSubmit =
-    spacetime.status === 'connected' && !isSigningIn && username.trim().length > 0;
+    isConnectionReady(spacetime) && !isSigningIn && username.trim().length > 0;
 
   const handleSignIn = () => {
     void auth.signIn(username, password);
@@ -91,7 +84,12 @@ export function AuthScreen({ auth, onCreateAccount, spacetime }: AuthScreenProps
         <StatusBadge label={connectionLabel} tone={connectionTone} />
         {spacetime.status === 'failed' ? (
           <view style={{ marginLeft: spacing.sm }}>
-            <Button grow={false} label="Retry DB" onPress={spacetime.retry} variant="ghost" />
+            <Button
+              grow={false}
+              label="Retry DB"
+              onPress={spacetime.retry}
+              variant="ghost"
+            />
           </view>
         ) : null}
       </view>

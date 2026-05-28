@@ -1,12 +1,12 @@
 /**
- * Lynx adapters for SpacetimeDB Lynx client
+ * Lynx adapters for SpacetimeDB Lynx client.
  *
- * These adapters bridge the spacetimedb-lynx interfaces with Lynx's native modules.
+ * Bridges spacetimedb-lynx transport interfaces with Lynx native modules.
  */
 
 import { fromByteArray, toByteArray } from 'base64-js';
-import type { FetchFn, WebsocketAdapter } from 'spacetimedb-lynx/sdk';
-import { writeHostLog } from '../debug/hostFileLogger';
+import type { FetchFn, WebsocketAdapter } from '../sdk/websocket_decompress_adapter';
+import { stdbLogger } from '../sdk/logger';
 
 type NativeHttpResponse = {
   status?: number;
@@ -46,9 +46,7 @@ function normalizeXhrBody(
 }
 
 /**
- * Lynx WebSocket Adapter
- *
- * Implements the LynxWebSocket interface using Lynx's WebSocketModule
+ * Lynx WebSocket adapter using Lynx's WebSocketModule.
  */
 export class LynxWebSocketAdapter implements WebsocketAdapter {
   private url: string;
@@ -83,8 +81,7 @@ export class LynxWebSocketAdapter implements WebsocketAdapter {
   constructor(url: string, protocol?: string) {
     this.url = url;
     this.protocol = protocol;
-    writeHostLog('info', '[LynxWebSocketAdapter] Constructed', {
-      source: 'LynxWebSocketAdapter',
+    stdbLogger('info', '[LynxWebSocketAdapter] Constructed', {
       url,
       protocol: protocol ?? null,
     });
@@ -103,8 +100,7 @@ export class LynxWebSocketAdapter implements WebsocketAdapter {
     }
 
     const statusHandler = (status: string) => {
-      writeHostLog('info', '[LynxWebSocketAdapter] Native status', {
-        source: 'LynxWebSocketAdapter',
+      stdbLogger('info', '[LynxWebSocketAdapter] Native status', {
         status,
         url: this.url,
       });
@@ -124,14 +120,14 @@ export class LynxWebSocketAdapter implements WebsocketAdapter {
     const messageHandlerBase64 = (base64: string) => {
       if (this._isConnected) {
         try {
-          writeHostLog('debug', '[LynxWebSocketAdapter] Native message', {
-            source: 'LynxWebSocketAdapter',
+          stdbLogger('debug', '[LynxWebSocketAdapter] Native message', {
             base64Length: base64.length,
           });
           const binary = toByteArray(base64);
           this._onmessage({ data: binary });
         } catch (e) {
-          console.error(
+          stdbLogger(
+            'error',
             '[LynxWebSocketAdapter] Failed to decode base64 message',
             e,
           );
@@ -150,25 +146,20 @@ export class LynxWebSocketAdapter implements WebsocketAdapter {
 
   send(data: Uint8Array): void {
     if (!this._isConnected) {
-      writeHostLog('warn', '[LynxWebSocketAdapter] Dropping send before open', {
-        source: 'LynxWebSocketAdapter',
+      stdbLogger('warn', '[LynxWebSocketAdapter] Dropping send before open', {
         byteLength: data.byteLength,
       });
       return;
     }
-    writeHostLog('debug', '[LynxWebSocketAdapter] Sending binary message', {
-      source: 'LynxWebSocketAdapter',
+    stdbLogger('debug', '[LynxWebSocketAdapter] Sending binary message', {
       byteLength: data.byteLength,
     });
     const base64 = fromByteArray(data);
-    NativeModules.WebSocketModule.sendBinary(base64);
+    NativeModules.WebSocketModule!.sendBinary(base64);
   }
 
   close(): void {
-    writeHostLog('info', '[LynxWebSocketAdapter] Closing', {
-      source: 'LynxWebSocketAdapter',
-      url: this.url,
-    });
+    stdbLogger('info', '[LynxWebSocketAdapter] Closing', { url: this.url });
     if (typeof NativeModules !== 'undefined' && NativeModules.WebSocketModule) {
       NativeModules.WebSocketModule.disconnect();
     }
@@ -176,9 +167,6 @@ export class LynxWebSocketAdapter implements WebsocketAdapter {
   }
 }
 
-/**
- * Lynx HTTP Response Adapter
- */
 class LynxHttpResponseAdapter {
   public readonly ok: boolean;
   public readonly status: number;
@@ -202,9 +190,7 @@ class LynxHttpResponseAdapter {
 }
 
 /**
- * Lynx HTTP Client Adapter
- *
- * Implements the LynxHttpClient interface using Lynx's HttpModule or XMLHttpRequest fallback
+ * Lynx HTTP client adapter using HttpModule or XMLHttpRequest fallback.
  */
 export const lynxFetch: FetchFn = async (
   url: string,
@@ -216,11 +202,7 @@ export const lynxFetch: FetchFn = async (
   const nativeBody = normalizeNativeBody(body);
 
   return new Promise((resolve, reject) => {
-    writeHostLog('info', '[lynxFetch] Request', {
-      source: 'lynxFetch',
-      method,
-      url,
-    });
+    stdbLogger('info', '[lynxFetch] Request', { method, url });
     if (typeof NativeModules !== 'undefined' && NativeModules.HttpModule) {
       const requestConfig = {
         url,
@@ -232,11 +214,10 @@ export const lynxFetch: FetchFn = async (
       NativeModules.HttpModule.request(
         requestConfig,
         (response: NativeHttpResponse) => {
-          writeHostLog(
+          stdbLogger(
             response.error ? 'error' : 'info',
             '[lynxFetch] Response',
             {
-              source: 'lynxFetch',
               status: response.status,
               error: response.error ?? null,
               url,
@@ -255,7 +236,6 @@ export const lynxFetch: FetchFn = async (
         },
       );
     } else {
-      // Fallback
       try {
         const xhr = new XMLHttpRequest();
         xhr.open(method, url, true);
@@ -263,16 +243,14 @@ export const lynxFetch: FetchFn = async (
           xhr.setRequestHeader(key, value as string);
         });
         xhr.onload = () => {
-          writeHostLog('info', '[lynxFetch] XMLHttpRequest response', {
-            source: 'lynxFetch',
+          stdbLogger('info', '[lynxFetch] XMLHttpRequest response', {
             status: xhr.status,
             url,
           });
           resolve(new LynxHttpResponseAdapter(xhr.status, xhr.responseText));
         };
         xhr.onerror = () => {
-          writeHostLog('error', '[lynxFetch] XMLHttpRequest network error', {
-            source: 'lynxFetch',
+          stdbLogger('error', '[lynxFetch] XMLHttpRequest network error', {
             status: xhr.status,
             url,
           });
@@ -285,5 +263,3 @@ export const lynxFetch: FetchFn = async (
     }
   });
 };
-
-// No wrapper needed, we export the adapter class directly for use as a constructor

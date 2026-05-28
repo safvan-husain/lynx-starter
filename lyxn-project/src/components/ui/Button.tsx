@@ -12,7 +12,12 @@ type ButtonProps = {
 
 const VARIANT_STYLES: Record<
   ButtonVariant,
-  { backgroundColor: string; borderColor: string; borderWidth: string; color: string }
+  {
+    backgroundColor: string;
+    borderColor: string;
+    borderWidth: string;
+    color: string;
+  }
 > = {
   primary: {
     backgroundColor: colors.primary,

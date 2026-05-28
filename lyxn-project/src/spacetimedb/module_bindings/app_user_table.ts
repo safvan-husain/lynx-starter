@@ -4,22 +4,19 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  TypeBuilder as __TypeBuilder,
-  t as __t,
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
-} from "spacetimedb-lynx";
-import {
-  UserRole,
-} from "./types";
-
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+} from 'spacetimedb-lynx';
+import { UserRole } from './types';
 
 export default __t.row({
-  userId: __t.u32().primaryKey().name("user_id"),
+  userId: __t.u32().primaryKey().name('user_id'),
   username: __t.string(),
-  passwordHash: __t.string().name("password_hash"),
+  passwordHash: __t.string().name('password_hash'),
   get role() {
     return UserRole;
   },
-  createdAt: __t.timestamp().name("created_at"),
+  createdAt: __t.timestamp().name('created_at'),
 });

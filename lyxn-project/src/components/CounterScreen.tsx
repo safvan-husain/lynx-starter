@@ -1,19 +1,15 @@
-import {
-  canMutateCounter,
-  canResetCounter,
-  roleLabel,
-} from '../auth/roles';
+import { getCapabilities } from '../auth/capabilities';
+import { isConnectionReady } from '../auth/session';
 import type { UseAuthReturn } from '../auth/useAuth';
 import { colors, radius, spacing, typography } from '../design/tokens';
 import type { UseCounterReturn } from '../spacetimedb/useCounter';
-import type { UseSpacetimeConnectionReturn } from '../spacetimedb/useSpacetimeConnection';
+import { useSpacetimeConnection } from '../spacetimedb/useSpacetimeConnection';
 import { Button } from './ui/Button';
 import { StatusBadge, type StatusBadgeTone } from './ui/StatusBadge';
 
 type CounterScreenProps = {
   auth: UseAuthReturn;
   counter: UseCounterReturn;
-  spacetime: UseSpacetimeConnectionReturn;
 };
 
 const COUNTER_STATUS_BADGE: Record<
@@ -25,22 +21,21 @@ const COUNTER_STATUS_BADGE: Record<
   failed: { label: 'Error', tone: 'error' },
 };
 
-export function CounterScreen({
-  auth,
-  counter,
-  spacetime,
-}: CounterScreenProps) {
-  const user = auth.user!;
+export function CounterScreen({ auth, counter }: CounterScreenProps) {
+  const spacetime = useSpacetimeConnection();
+  const user = auth.currentUser!;
+  const caps = getCapabilities(user.role);
   const counterBadge = COUNTER_STATUS_BADGE[counter.status];
+  const connectionReady = isConnectionReady(spacetime);
   const allowMutate =
-    canMutateCounter(user.role) &&
+    caps.canMutateCounter &&
     counter.status === 'ready' &&
-    spacetime.status === 'connected' &&
+    connectionReady &&
     !counter.isMutating;
   const allowReset =
-    canResetCounter(user.role) &&
+    caps.canResetCounter &&
     counter.status === 'ready' &&
-    spacetime.status === 'connected' &&
+    connectionReady &&
     !counter.isMutating;
 
   const errorMessage = counter.errorMessage ?? spacetime.errorMessage;
@@ -86,7 +81,7 @@ export function CounterScreen({
               marginTop: spacing.xs,
             }}
           >
-            Signed in as {user.username} ({roleLabel(user.role)}).
+            Signed in as {user.username} ({caps.roleLabel}).
           </text>
         </view>
         <StatusBadge label={counterBadge.label} tone={counterBadge.tone} />
@@ -101,8 +96,8 @@ export function CounterScreen({
         }}
       >
         <StatusBadge
-          label={spacetime.status === 'connected' ? 'Connected' : 'Offline'}
-          tone={spacetime.status === 'connected' ? 'success' : 'error'}
+          label={connectionReady ? 'Connected' : 'Offline'}
+          tone={connectionReady ? 'success' : 'error'}
         />
         <Button
           grow={false}
@@ -188,7 +183,7 @@ export function CounterScreen({
             marginTop: spacing.sm,
           }}
         >
-          {canMutateCounter(user.role)
+          {caps.canMutateCounter
             ? 'You can update this shared counter.'
             : 'Your role can view this counter only.'}
         </text>
@@ -215,7 +210,7 @@ export function CounterScreen({
         </view>
       </view>
 
-      {canResetCounter(user.role) ? (
+      {caps.canResetCounter ? (
         <Button
           disabled={!allowReset}
           grow={true}

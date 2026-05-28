@@ -52,6 +52,12 @@
       "import": "./dist/react/index.mjs",
       "require": "./dist/react/index.cjs",
       "default": "./dist/react/index.mjs"
+    },
+    "./lynx": {
+      "types": "./dist/lynx/index.d.ts",
+      "import": "./dist/lynx/index.mjs",
+      "require": "./dist/lynx/index.cjs",
+      "default": "./dist/lynx/index.mjs"
     }
   },
   "size-limit": [
@@ -96,8 +102,7 @@
     "tsup": "^8.1.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.18.2",
-     "vite": "^7.1.5",
+    "vite": "^7.1.5",
     "vitest": "^3.2.4"
   }
 }
-

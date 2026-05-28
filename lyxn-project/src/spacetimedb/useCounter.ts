@@ -6,10 +6,9 @@ import {
   COUNTER_SERVER_URL,
 } from './connectionConfig';
 import { getErrorMessage } from './errors';
-import type { DbConnection } from './module_bindings';
 import { runReducerWithTimeout } from './reducerUtils';
-import { lynxFetch } from './lynx-adapters';
-import type { SpacetimeConnectionStatus } from './useSpacetimeConnection';
+import { querySql } from './sqlRead';
+import { useSpacetimeConnection } from './useSpacetimeConnection';
 
 export type CounterConnectionStatus = 'idle' | 'ready' | 'failed';
 
@@ -17,20 +16,7 @@ export { COUNTER_DATABASE_NAME, COUNTER_SERVER_URL };
 
 const COUNTER_SQL = 'select * from counter';
 
-type CounterSqlResult = Array<{
-  rows?: Array<[number, number]>;
-}>;
-
-type FetchLikeResponse = {
-  json: () => Promise<unknown>;
-  ok?: boolean;
-  status?: number;
-  text?: () => Promise<string>;
-};
-
 export interface UseCounterOptions {
-  connection: DbConnection | null;
-  connectionStatus: SpacetimeConnectionStatus;
   isSignedIn: boolean;
 }
 
@@ -44,36 +30,16 @@ export interface UseCounterReturn {
   status: CounterConnectionStatus;
 }
 
-function getSqlEndpoint(): string {
-  return `${COUNTER_SERVER_URL}/v1/database/${COUNTER_DATABASE_NAME}/sql`;
-}
-
 async function queryCounterValue(): Promise<number> {
-  const response = (await lynxFetch(getSqlEndpoint(), {
-    method: 'POST',
-    headers: {
-      'content-type': 'text/plain',
-    },
-    body: COUNTER_SQL,
-  })) as FetchLikeResponse;
-
-  if (response.ok === false) {
-    const body = response.text ? await response.text() : '';
-    throw new Error(
-      `Counter SQL request failed (${response.status ?? 'unknown'}): ${body}`,
-    );
-  }
-
-  const payload = (await response.json()) as CounterSqlResult;
+  const payload = await querySql(COUNTER_SQL);
   const row = payload?.[0]?.rows?.[0];
   return Number(row?.[1] ?? 0);
 }
 
 export function useCounter({
-  connection,
-  connectionStatus,
   isSignedIn,
 }: UseCounterOptions): UseCounterReturn {
+  const { connection, status: connectionStatus } = useSpacetimeConnection();
   const [counterValue, setCounterValue] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isMutating, setIsMutating] = useState(false);
@@ -131,18 +97,10 @@ export function useCounter({
     return () => {
       stopPolling();
     };
-  }, [
-    connectionStatus,
-    fetchCounterSnapshot,
-    isSignedIn,
-    stopPolling,
-  ]);
+  }, [connectionStatus, fetchCounterSnapshot, isSignedIn, stopPolling]);
 
   const runReducer = useCallback(
-    async (
-      label: string,
-      reducerPromise: Promise<unknown>,
-    ) => {
+    async (label: string, reducerPromise: Promise<unknown>) => {
       if (!connection || connectionStatus !== 'connected' || isMutating) {
         return;
       }

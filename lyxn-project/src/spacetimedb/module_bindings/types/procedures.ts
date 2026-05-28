@@ -3,8 +3,6 @@
 
 /* eslint-disable */
 /* tslint:disable */
-import { type Infer as __Infer } from "spacetimedb-lynx";
+import type { Infer as __Infer } from 'spacetimedb-lynx';
 
 // Import all procedure arg schemas
-
-

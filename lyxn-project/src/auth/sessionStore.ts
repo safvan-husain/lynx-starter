@@ -5,7 +5,11 @@ const AUTH_USER_KEY = 'auth_user';
 
 type StorageModule = {
   getItem: (key: string, callback: (value: string) => void) => void;
-  setItem: (key: string, value: string, callback: (result: string) => void) => void;
+  setItem: (
+    key: string,
+    value: string,
+    callback: (result: string) => void,
+  ) => void;
   removeItem: (key: string, callback: (result: string) => void) => void;
 };
 

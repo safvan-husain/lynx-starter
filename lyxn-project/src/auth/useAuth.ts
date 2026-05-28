@@ -1,18 +1,27 @@
 import { useCallback, useEffect, useState } from '@lynx-js/react';
-import type { UseSpacetimeConnectionReturn } from '../spacetimedb/useSpacetimeConnection';
-import { getErrorMessage } from '../spacetimedb/errors';
-import { login, logout, register as registerAccount } from './authApi';
-import type { AppRole } from './types';
+import { useSpacetimeConnection } from '../spacetimedb/useSpacetimeConnection';
 import {
-  clearAuthSession,
-  loadAuthUser,
-  saveAuthUser,
-} from './sessionStore';
-import type { AuthStatus, AuthUser } from './types';
+  isSignedIn,
+  registerSession,
+  restoreSession,
+  type SessionSnapshot,
+  sessionErrorMessage,
+  signedInSnapshot,
+  signedOutSnapshot,
+  signInSession,
+  signOutSession,
+} from './session';
+import type { AppRole } from './types';
 
-export interface UseAuthReturn {
+export type { SessionConnection, SessionSnapshot } from './session';
+export {
+  getConnectionStatusPresentation,
+  isConnectionReady,
+  isSignedIn,
+} from './session';
+
+export interface UseAuthReturn extends SessionSnapshot {
   clearError: () => void;
-  errorMessage: string | null;
   register: (
     username: string,
     password: string,
@@ -20,27 +29,32 @@ export interface UseAuthReturn {
   ) => Promise<void>;
   signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  status: AuthStatus;
-  user: AuthUser | null;
 }
 
-export function useAuth(spacetime: UseSpacetimeConnectionReturn): UseAuthReturn {
-  const [status, setStatus] = useState<AuthStatus>('signedOut');
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+export function useAuth(): UseAuthReturn {
+  const spacetime = useSpacetimeConnection();
+  const [snapshot, setSnapshot] = useState<SessionSnapshot>(
+    signedOutSnapshot(),
+  );
 
   useEffect(() => {
     let cancelled = false;
 
     const restore = async () => {
-      const storedUser = await loadAuthUser();
-      if (cancelled || !storedUser) {
+      const restored = await restoreSession(spacetime);
+      if (cancelled) {
         return;
       }
 
-      if (spacetime.status === 'connected' && spacetime.connection) {
-        setUser(storedUser);
-        setStatus('signedIn');
+      if (restored.status === 'signedIn' && restored.currentUser) {
+        setSnapshot(signedInSnapshot(restored.currentUser));
+        return;
+      }
+
+      if (restored.status === 'signedOut') {
+        setSnapshot((current) =>
+          current.status === 'signedIn' ? signedOutSnapshot() : current,
+        );
       }
     };
 
@@ -53,116 +67,69 @@ export function useAuth(spacetime: UseSpacetimeConnectionReturn): UseAuthReturn 
 
   const signIn = useCallback(
     async (username: string, password: string) => {
-      setErrorMessage(null);
-
-      if (!spacetime.connection || spacetime.status !== 'connected') {
-        setErrorMessage('Waiting for database connection. Try again in a moment.');
-        return;
-      }
-
-      if (!username.trim() || !password) {
-        setErrorMessage('Enter a username and password.');
-        return;
-      }
-
-      setStatus('signingIn');
+      setSnapshot((current) => ({
+        ...current,
+        errorMessage: null,
+        status: 'signingIn',
+      }));
 
       try {
-        const nextUser = await login(
-          spacetime.connection,
-          username,
-          password,
-        );
-        await saveAuthUser(nextUser);
-        setUser(nextUser);
-        setStatus('signedIn');
-        setErrorMessage(null);
+        const nextUser = await signInSession(spacetime, username, password);
+        setSnapshot(signedInSnapshot(nextUser));
       } catch (error) {
-        setStatus('signedOut');
-        setUser(null);
-        setErrorMessage(getErrorMessage(error));
+        setSnapshot(signedOutSnapshot(sessionErrorMessage(error)));
       }
     },
     [spacetime.connection, spacetime.status],
   );
 
   const clearError = useCallback(() => {
-    setErrorMessage(null);
+    setSnapshot((current) => ({
+      ...current,
+      errorMessage: null,
+    }));
   }, []);
 
   const register = useCallback(
     async (username: string, password: string, role: AppRole) => {
-      setErrorMessage(null);
-
-      if (!spacetime.connection || spacetime.status !== 'connected') {
-        setErrorMessage('Waiting for database connection. Try again in a moment.');
-        return;
-      }
-
-      const trimmed = username.trim();
-      if (trimmed.length < 3) {
-        setErrorMessage('Username must be at least 3 characters.');
-        return;
-      }
-      if (password.length < 6) {
-        setErrorMessage('Password must be at least 6 characters.');
-        return;
-      }
-      if (role === 'admin') {
-        setErrorMessage('Admin accounts can only be created by an existing admin.');
-        return;
-      }
-
-      setStatus('registering');
+      setSnapshot((current) => ({
+        ...current,
+        errorMessage: null,
+        status: 'registering',
+      }));
 
       try {
-        await registerAccount(
-          spacetime.connection,
-          trimmed,
+        const nextUser = await registerSession(
+          spacetime,
+          username,
           password,
           role,
         );
-        const nextUser = await login(
-          spacetime.connection,
-          trimmed,
-          password,
-        );
-        await saveAuthUser(nextUser);
-        setUser(nextUser);
-        setStatus('signedIn');
-        setErrorMessage(null);
+        setSnapshot(signedInSnapshot(nextUser));
       } catch (error) {
-        setStatus('signedOut');
-        setUser(null);
-        setErrorMessage(getErrorMessage(error));
+        setSnapshot(signedOutSnapshot(sessionErrorMessage(error)));
       }
     },
     [spacetime.connection, spacetime.status],
   );
 
   const signOut = useCallback(async () => {
-    setErrorMessage(null);
+    setSnapshot((current) => ({
+      ...current,
+      errorMessage: null,
+    }));
 
-    if (spacetime.connection && spacetime.status === 'connected') {
-      try {
-        await logout(spacetime.connection);
-      } catch {
-        // Best-effort server logout.
-      }
-    }
-
-    await clearAuthSession();
-    setUser(null);
-    setStatus('signedOut');
+    await signOutSession(spacetime);
+    setSnapshot(signedOutSnapshot());
   }, [spacetime.connection, spacetime.status]);
 
   return {
     clearError,
-    errorMessage,
+    currentUser: snapshot.currentUser,
+    errorMessage: snapshot.errorMessage,
     register,
     signIn,
     signOut,
-    status,
-    user,
+    status: snapshot.status,
   };
 }

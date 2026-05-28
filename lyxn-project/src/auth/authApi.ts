@@ -1,28 +1,10 @@
-import { roleFromUserRole, userRoleFromAppRole } from './roles';
-import type { AppRole, AuthUser } from './types';
-import {
-  COUNTER_DATABASE_NAME,
-  COUNTER_SERVER_URL,
-} from '../spacetimedb/connectionConfig';
+import { roleFromUserRole, userRoleFromAppRole } from './capabilities';
 import { getErrorMessage } from '../spacetimedb/errors';
 import type { DbConnection } from '../spacetimedb/module_bindings';
+import type { AuthSession } from '../spacetimedb/module_bindings/types';
 import { runReducerWithTimeout } from '../spacetimedb/reducerUtils';
-import { lynxFetch } from '../spacetimedb/lynx-adapters';
-
-type SqlResult = Array<{
-  rows?: Array<Array<unknown>>;
-}>;
-
-type FetchLikeResponse = {
-  json: () => Promise<unknown>;
-  ok?: boolean;
-  status?: number;
-  text?: () => Promise<string>;
-};
-
-function getSqlEndpoint(): string {
-  return `${COUNTER_SERVER_URL}/v1/database/${COUNTER_DATABASE_NAME}/sql`;
-}
+import { querySql } from '../spacetimedb/sqlRead';
+import type { AppRole, AuthUser } from './types';
 
 function escapeSqlString(value: string): string {
   return value.replace(/'/g, "''");
@@ -63,29 +45,34 @@ function parseRoleValue(value: unknown): AppRole {
   return 'student';
 }
 
-async function runSql(query: string): Promise<SqlResult> {
-  const response = (await lynxFetch(getSqlEndpoint(), {
-    method: 'POST',
-    headers: {
-      'content-type': 'text/plain',
-    },
-    body: query,
-  })) as FetchLikeResponse;
-
-  if (response.ok === false) {
-    const body = response.text ? await response.text() : '';
-    throw new Error(`SQL request failed (${response.status ?? 'unknown'}): ${body}`);
-  }
-
-  return (await response.json()) as SqlResult;
-}
-
 export async function fetchUserRole(username: string): Promise<AppRole> {
   const normalized = username.trim().toLowerCase();
   const query = `select role from app_user where username = '${escapeSqlString(normalized)}'`;
-  const payload = await runSql(query);
+  const payload = await querySql(query);
   const roleValue = payload?.[0]?.rows?.[0]?.[0];
   return parseRoleValue(roleValue);
+}
+
+export function readCurrentSessionUser(
+  connection: DbConnection,
+): AuthUser | null {
+  const identity = connection.identity;
+  if (!identity) {
+    return null;
+  }
+
+  const identityHex = identity.toHexString();
+
+  for (const session of connection.db.auth_session.iter() as Iterable<AuthSession>) {
+    if (session.identity.toHexString() === identityHex) {
+      return {
+        username: session.username,
+        role: roleFromUserRole(session.role),
+      };
+    }
+  }
+
+  return null;
 }
 
 export async function login(
@@ -105,10 +92,9 @@ export async function login(
     throw new Error(getErrorMessage(error));
   }
 
-  const role = await fetchUserRole(username);
   return {
     username: username.trim().toLowerCase(),
-    role,
+    role: await fetchUserRole(username),
   };
 }
 

@@ -4,15 +4,13 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  TypeBuilder as __TypeBuilder,
-  t as __t,
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
-} from "spacetimedb-lynx";
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+} from 'spacetimedb-lynx';
 
-import {
-  UserRole,
-} from "./types";
+import { UserRole } from './types';
 
 export default {
   username: __t.string(),

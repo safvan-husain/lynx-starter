@@ -3,15 +3,15 @@
 
 /* eslint-disable */
 /* tslint:disable */
-import { type Infer as __Infer } from "spacetimedb-lynx";
+import type { Infer as __Infer } from 'spacetimedb-lynx';
 
 // Import all reducer arg schemas
-import DecrementCounterReducer from "../decrement_counter_reducer";
-import IncrementCounterReducer from "../increment_counter_reducer";
-import LoginReducer from "../login_reducer";
-import LogoutReducer from "../logout_reducer";
-import RegisterReducer from "../register_reducer";
-import ResetCounterReducer from "../reset_counter_reducer";
+import type DecrementCounterReducer from '../decrement_counter_reducer';
+import type IncrementCounterReducer from '../increment_counter_reducer';
+import type LoginReducer from '../login_reducer';
+import type LogoutReducer from '../logout_reducer';
+import type RegisterReducer from '../register_reducer';
+import type ResetCounterReducer from '../reset_counter_reducer';
 
 export type DecrementCounterParams = __Infer<typeof DecrementCounterReducer>;
 export type IncrementCounterParams = __Infer<typeof IncrementCounterReducer>;
@@ -19,4 +19,3 @@ export type LoginParams = __Infer<typeof LoginReducer>;
 export type LogoutParams = __Infer<typeof LogoutReducer>;
 export type RegisterParams = __Infer<typeof RegisterReducer>;
 export type ResetCounterParams = __Infer<typeof ResetCounterReducer>;
-

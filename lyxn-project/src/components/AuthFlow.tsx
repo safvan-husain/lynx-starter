@@ -1,6 +1,5 @@
 import { useState } from '@lynx-js/react';
 import type { UseAuthReturn } from '../auth/useAuth';
-import type { UseSpacetimeConnectionReturn } from '../spacetimedb/useSpacetimeConnection';
 import { AuthScreen } from './AuthScreen';
 import { RegisterScreen } from './RegisterScreen';
 
@@ -8,10 +7,9 @@ type AuthView = 'signIn' | 'register';
 
 type AuthFlowProps = {
   auth: UseAuthReturn;
-  spacetime: UseSpacetimeConnectionReturn;
 };
 
-export function AuthFlow({ auth, spacetime }: AuthFlowProps) {
+export function AuthFlow({ auth }: AuthFlowProps) {
   const [view, setView] = useState<AuthView>('signIn');
 
   const goToRegister = () => {
@@ -25,16 +23,8 @@ export function AuthFlow({ auth, spacetime }: AuthFlowProps) {
   };
 
   if (view === 'register') {
-    return (
-      <RegisterScreen auth={auth} onBack={goToSignIn} spacetime={spacetime} />
-    );
+    return <RegisterScreen auth={auth} onBack={goToSignIn} />;
   }
 
-  return (
-    <AuthScreen
-      auth={auth}
-      onCreateAccount={goToRegister}
-      spacetime={spacetime}
-    />
-  );
+  return <AuthScreen auth={auth} onCreateAccount={goToRegister} />;
 }

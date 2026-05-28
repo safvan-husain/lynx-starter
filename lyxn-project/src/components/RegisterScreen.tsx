@@ -1,42 +1,35 @@
 import { useState } from '@lynx-js/react';
-import { colors, radius, spacing, typography } from '../design/tokens';
-import type { UseAuthReturn } from '../auth/useAuth';
+import { getCapabilities } from '../auth/capabilities';
+import {
+  getConnectionStatusPresentation,
+  isConnectionReady,
+} from '../auth/session';
 import type { AppRole } from '../auth/types';
-import type { UseSpacetimeConnectionReturn } from '../spacetimedb/useSpacetimeConnection';
-import { roleLabel } from '../auth/roles';
+import type { UseAuthReturn } from '../auth/useAuth';
+import { colors, radius, spacing, typography } from '../design/tokens';
+import { useSpacetimeConnection } from '../spacetimedb/useSpacetimeConnection';
 import { Button } from './ui/Button';
 import { StatusBadge } from './ui/StatusBadge';
 
 type RegisterScreenProps = {
   auth: UseAuthReturn;
   onBack: () => void;
-  spacetime: UseSpacetimeConnectionReturn;
 };
 
 const REGISTER_ROLES: AppRole[] = ['student', 'parent', 'teacher'];
 
-export function RegisterScreen({ auth, onBack, spacetime }: RegisterScreenProps) {
+export function RegisterScreen({ auth, onBack }: RegisterScreenProps) {
+  const spacetime = useSpacetimeConnection();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<AppRole>('student');
 
-  const connectionTone =
-    spacetime.status === 'connected'
-      ? 'success'
-      : spacetime.status === 'failed'
-        ? 'error'
-        : 'info';
-
-  const connectionLabel =
-    spacetime.status === 'connected'
-      ? 'Database connected'
-      : spacetime.status === 'failed'
-        ? 'Database offline'
-        : 'Connecting…';
+  const { label: connectionLabel, tone: connectionTone } =
+    getConnectionStatusPresentation(spacetime);
 
   const isRegistering = auth.status === 'registering';
   const canSubmit =
-    spacetime.status === 'connected' &&
+    isConnectionReady(spacetime) &&
     !isRegistering &&
     username.trim().length >= 3 &&
     password.length >= 6;
@@ -92,7 +85,12 @@ export function RegisterScreen({ auth, onBack, spacetime }: RegisterScreenProps)
         <StatusBadge label={connectionLabel} tone={connectionTone} />
         {spacetime.status === 'failed' ? (
           <view style={{ marginLeft: spacing.sm }}>
-            <Button grow={false} label="Retry DB" onPress={spacetime.retry} variant="ghost" />
+            <Button
+              grow={false}
+              label="Retry DB"
+              onPress={spacetime.retry}
+              variant="ghost"
+            />
           </view>
         ) : null}
       </view>
@@ -189,7 +187,7 @@ export function RegisterScreen({ auth, onBack, spacetime }: RegisterScreenProps)
               >
                 <Button
                   grow={true}
-                  label={roleLabel(option)}
+                  label={getCapabilities(option).roleLabel}
                   onPress={() => setRole(option)}
                   variant={selected ? 'primary' : 'secondary'}
                 />

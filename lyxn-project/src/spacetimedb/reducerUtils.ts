@@ -1,5 +1,5 @@
-import { REDUCER_ACK_TIMEOUT_MS } from './connectionConfig';
 import { writeHostLog } from '../debug/hostFileLogger';
+import { REDUCER_ACK_TIMEOUT_MS } from './connectionConfig';
 
 export async function runReducerWithTimeout<T>(
   label: string,

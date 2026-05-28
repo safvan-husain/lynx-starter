@@ -108,6 +108,21 @@ export default defineConfig([
     esbuildOptions: commonEsbuildTweaks(),
   },
 
+  // Lynx adapters subpath: dist/lynx/index.{mjs,cjs}
+  {
+    entry: { index: 'src/lynx/index.ts' },
+    format: ['esm', 'cjs'],
+    target: 'es2015',
+    outDir: 'dist/lynx',
+    dts: false,
+    sourcemap: true,
+    clean: true,
+    platform: 'browser',
+    treeshake: 'smallest',
+    outExtension,
+    esbuildOptions: commonEsbuildTweaks(),
+  },
+
 ]) satisfies
   | Options
   | Options[]
