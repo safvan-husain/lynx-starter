@@ -1,7 +1,12 @@
 import { getErrorMessage } from '../spacetimedb/errors';
 import type { DbConnection } from '../spacetimedb/module_bindings';
 import type { SpacetimeConnectionStatus } from '../spacetimedb/useSpacetimeConnection';
-import { login, logout, register as registerAccount } from './authApi';
+import {
+  login,
+  logout,
+  readCurrentSessionUser,
+  register as registerAccount,
+} from './authApi';
 import { clearAuthSession, loadAuthUser, saveAuthUser } from './sessionStore';
 import type { AppRole, AuthStatus, AuthUser } from './types';
 
@@ -76,12 +81,24 @@ export async function restoreSession(
   spacetime: SessionConnection,
 ): Promise<Pick<SessionSnapshot, 'currentUser' | 'status'>> {
   const storedUser = await loadAuthUser();
-  if (!storedUser || !isConnectionReady(spacetime)) {
+  const { connection, status } = spacetime;
+
+  if (!storedUser || !connection || status !== 'connected') {
+    return signedOutSnapshot();
+  }
+
+  const serverUser = readCurrentSessionUser(connection);
+  if (
+    !serverUser ||
+    serverUser.username !== storedUser.username ||
+    serverUser.role !== storedUser.role
+  ) {
+    await clearAuthSession();
     return signedOutSnapshot();
   }
 
   return {
-    currentUser: storedUser,
+    currentUser: serverUser,
     status: 'signedIn',
   };
 }
