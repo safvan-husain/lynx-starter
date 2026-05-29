@@ -343,15 +343,25 @@ async function main() {
   assert.deepEqual(await queryCounter(serverUrl), { id: 0, count: 0 });
   log('Student increment is rejected');
 
-  const badLogin = await requestIdentity(serverUrl);
+  const wrongPasswordLogin = await requestIdentity(serverUrl);
   await expectReducerFailure(
     serverUrl,
-    badLogin.token,
+    wrongPasswordLogin.token,
     'login',
     ['admin', 'wrong-password'],
-    /Invalid username or password\./,
+    /Password is incorrect\./,
   );
-  log('Bad login is rejected');
+  log('Wrong password login is rejected');
+
+  const unknownUserLogin = await requestIdentity(serverUrl);
+  await expectReducerFailure(
+    serverUrl,
+    unknownUserLogin.token,
+    'login',
+    ['missing-user', 'wrong-password'],
+    /Username does not exist\./,
+  );
+  log('Unknown username login is rejected');
 
   await callReducer(serverUrl, admin.token, 'increment_counter', []);
   assert.deepEqual(await queryCounter(serverUrl), { id: 0, count: 1 });

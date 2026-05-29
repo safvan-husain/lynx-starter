@@ -190,10 +190,10 @@ pub fn login(ctx: &ReducerContext, username: String, password: String) -> Result
 
     let username = username.trim();
     let user = find_user_by_username(ctx, username)
-        .ok_or_else(|| "Invalid username or password.".to_string())?;
+        .ok_or_else(|| "Username does not exist.".to_string())?;
 
     if !verify_password(&password, &user.password_hash) {
-        return Err("Invalid username or password.".to_string());
+        return Err("Password is incorrect.".to_string());
     }
 
     clear_login_rate_limit(ctx);
