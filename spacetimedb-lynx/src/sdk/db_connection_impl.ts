@@ -102,6 +102,17 @@ export type DbConnectionConfig<RemoteModule extends UntypedRemoteModule> = {
 
 type ProcedureCallback = (result: ProcedureResultMessage['result']) => void;
 
+export type OneOffQueryTableResult<Row = unknown> = {
+  tableName: string;
+  rows: Row[];
+};
+
+type OneOffQueryWireResult =
+  | { ok: QueryRows }
+  | {
+      err: string;
+    };
+
 export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   implements DbContext<RemoteModule>
 {
@@ -161,6 +172,10 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   >();
   #reducerCallInfo = new Map<number, { name: string; args: object }>();
   #procedureCallbacks = new Map<number, ProcedureCallback>();
+  #oneOffQueryCallbacks = new Map<
+    number,
+    (result: OneOffQueryWireResult) => void
+  >();
   #rowDeserializers: Record<string, Deserializer<any>>;
   #reducerArgsSerializers: Record<
     string,
@@ -368,6 +383,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       reducers: this.reducers,
       isActive: this.isActive,
       subscriptionBuilder: this.subscriptionBuilder.bind(this),
+      querySql: this.querySql.bind(this),
       disconnect: this.disconnect.bind(this),
       event,
     };
@@ -500,6 +516,15 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       });
     }
     return this.#mergeTableUpdates(updates);
+  }
+
+  #queryRowsToTableResults(rows: QueryRows): OneOffQueryTableResult[] {
+    return rows.tables.map(tableRows => ({
+      tableName: tableRows.table,
+      rows: this.#parseRowList('insert', tableRows.table, tableRows.rows).map(
+        op => op.row
+      ),
+    }));
   }
 
   #tableUpdateRowsToOperations(
@@ -829,10 +854,17 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
         break;
       }
       case 'OneOffQueryResult': {
-        stdbLogger(
-          'warn',
-          'Received OneOffQueryResult but SDK does not expose one-off query APIs yet.'
-        );
+        const { requestId, result } = serverMessage.value;
+        const cb = this.#oneOffQueryCallbacks.get(requestId);
+        this.#oneOffQueryCallbacks.delete(requestId);
+        if (!cb) {
+          stdbLogger(
+            'warn',
+            `Received OneOffQueryResult for unknown requestId ${requestId}.`
+          );
+          break;
+        }
+        cb(result as unknown as OneOffQueryWireResult);
         break;
       }
     }
@@ -969,6 +1001,33 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     return this.callProcedure(procedureName, argsBuffer).then(returnBuf => {
       return deserializeReturn(new BinaryReader(returnBuf));
     });
+  }
+
+  /**
+   * Execute a one-off SQL query over the active WebSocket connection.
+   *
+   * The result is grouped by source table and deserialized into generated row
+   * objects using the module bindings available on this connection.
+   */
+  querySql(sql: string): Promise<OneOffQueryTableResult[]> {
+    const { promise, resolve, reject } =
+      Promise.withResolvers<OneOffQueryTableResult[]>();
+    const requestId = this.#getNextRequestId();
+    const message = ClientMessage.OneOffQuery({
+      requestId,
+      queryString: sql,
+    });
+
+    this.#oneOffQueryCallbacks.set(requestId, result => {
+      if ('ok' in result) {
+        resolve(this.#queryRowsToTableResults(result.ok));
+      } else {
+        reject(new Error(result.err));
+      }
+    });
+
+    this.#sendMessage(message);
+    return promise;
   }
 
   /**

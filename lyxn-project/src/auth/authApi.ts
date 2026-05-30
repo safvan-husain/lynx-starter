@@ -1,9 +1,11 @@
 import { roleFromUserRole, userRoleFromAppRole } from './capabilities';
 import { getErrorMessage } from '../spacetimedb/errors';
 import type { DbConnection } from '../spacetimedb/module_bindings';
-import type { AuthSession } from '../spacetimedb/module_bindings/types';
+import type {
+  AppUser,
+  AuthSession,
+} from '../spacetimedb/module_bindings/types';
 import { runReducerWithTimeout } from '../spacetimedb/reducerUtils';
-import { querySql } from '../spacetimedb/sqlRead';
 import type { AppRole, AuthUser } from './types';
 
 const LOGIN_SESSION_WAIT_MS = 3000;
@@ -19,58 +21,36 @@ function escapeSqlString(value: string): string {
   return value.replace(/'/g, "''");
 }
 
+type SqlTableResult = Awaited<ReturnType<DbConnection['querySql']>>;
+
+function getTableRows<Row>(
+  result: SqlTableResult,
+  tableName: string,
+): Row[] {
+  return (result.find((table) => table.tableName === tableName)?.rows ??
+    []) as Row[];
+}
+
 function normalizeIdentityHex(value: string): string {
   return value.toLowerCase().replace(/^0x/, '');
 }
 
-function parseRoleValue(value: unknown): AppRole | null {
-  if (typeof value === 'string') {
-    const normalized = value.toLowerCase();
-    if (normalized.includes('admin')) return 'admin';
-    if (normalized.includes('teacher')) return 'teacher';
-    if (normalized.includes('parent')) return 'parent';
-    if (normalized.includes('student')) return 'student';
-    return null;
-  }
-
-  if (Array.isArray(value)) {
-    const tag = value[0];
-    if (typeof tag === 'number') {
-      switch (tag) {
-        case 3:
-          return 'admin';
-        case 2:
-          return 'teacher';
-        case 1:
-          return 'parent';
-        case 0:
-          return 'student';
-        default:
-          return null;
-      }
-    }
-  }
-
-  if (value && typeof value === 'object') {
-    if ('Admin' in value || 'admin' in value) return 'admin';
-    if ('Teacher' in value || 'teacher' in value) return 'teacher';
-    if ('Parent' in value || 'parent' in value) return 'parent';
-    if ('Student' in value || 'student' in value) return 'student';
-  }
-
-  return null;
-}
-
-export async function fetchUserRole(username: string): Promise<AppRole | null> {
+export async function fetchUserRole(
+  connection: DbConnection,
+  username: string,
+): Promise<AppRole | null> {
   const normalized = username.trim().toLowerCase();
-  const query = `select role from app_user where username = '${escapeSqlString(normalized)}'`;
-  const payload = await querySql(query);
-  const roleValue = payload?.[0]?.rows?.[0]?.[0];
-  return parseRoleValue(roleValue);
+  const query = `select * from app_user where username = '${escapeSqlString(normalized)}'`;
+  const payload = await connection.querySql(query);
+  const user = getTableRows<AppUser>(payload, 'app_user')[0];
+  return user ? roleFromUserRole(user.role) : null;
 }
 
-async function usernameExists(username: string): Promise<boolean> {
-  return (await fetchUserRole(username)) !== null;
+async function usernameExists(
+  connection: DbConnection,
+  username: string,
+): Promise<boolean> {
+  return (await fetchUserRole(connection, username)) !== null;
 }
 
 function parseIdentityValue(value: unknown): string | null {
@@ -80,6 +60,15 @@ function parseIdentityValue(value: unknown): string | null {
 
   if (Array.isArray(value) && typeof value[0] === 'string') {
     return normalizeIdentityHex(value[0]);
+  }
+
+  if (
+    value &&
+    typeof value === 'object' &&
+    'toHexString' in value &&
+    typeof value.toHexString === 'function'
+  ) {
+    return normalizeIdentityHex(value.toHexString());
   }
 
   return null;
@@ -94,13 +83,13 @@ async function fetchCurrentSessionUser(
   }
 
   const identityHex = normalizeIdentityHex(identity.toHexString());
-  const payload = await querySql('select identity, username, role from auth_session');
-  const rows = payload?.[0]?.rows ?? [];
+  const payload = await connection.querySql('select * from auth_session');
+  const rows = getTableRows<AuthSession>(payload, 'auth_session');
 
   for (const row of rows) {
-    const sessionIdentity = parseIdentityValue(row[0]);
-    const username = row[1];
-    const role = parseRoleValue(row[2]);
+    const sessionIdentity = parseIdentityValue(row.identity);
+    const username = row.username;
+    const role = roleFromUserRole(row.role);
 
     if (
       sessionIdentity === identityHex &&
@@ -181,7 +170,7 @@ export async function login(
     return sessionUser;
   }
 
-  if (await usernameExists(normalizedUsername)) {
+  if (await usernameExists(connection, normalizedUsername)) {
     throw new Error('Password is incorrect.');
   }
 

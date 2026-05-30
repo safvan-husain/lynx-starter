@@ -274,11 +274,14 @@ export class DbConnectionBuilder<DbConnection extends DbConnectionImpl<any>> {
     // Ideally, it would be a compile time error, but I'm not sure how to accomplish that.
     ensureMinimumVersionOrThrow(this.remoteModule.versionInfo?.cliVersion);
 
-    if (!this.#WS) {
+    const usingDefaultCreateWSFn =
+      this.#createWSFn === WebsocketDecompressAdapter.createWebSocketFn;
+
+    if (usingDefaultCreateWSFn && !this.#WS) {
       throw new Error('WebSocket implementation is required to connect to SpacetimeDB');
     }
 
-    if (!this.#fetchFn) {
+    if (usingDefaultCreateWSFn && !this.#fetchFn) {
       throw new Error('Fetch implementation is required to connect to SpacetimeDB');
     }
 
@@ -293,7 +296,12 @@ export class DbConnectionBuilder<DbConnection extends DbConnectionImpl<any>> {
       confirmedReads: this.#confirmedReads,
       createWSFn: this.#createWSFn,
       WS: this.#WS,
-      fetchFn: this.#fetchFn,
+      fetchFn:
+        this.#fetchFn ??
+        (() =>
+          Promise.reject(
+            new Error('Fetch implementation is required to connect to SpacetimeDB')
+          )),
       remoteModule: this.remoteModule,
     });
   }

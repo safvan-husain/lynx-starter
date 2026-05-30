@@ -17,6 +17,7 @@ import {
   bobIdentity,
   encodePlayer,
   encodeUser,
+  makeQueryRows,
   makeQuerySetUpdate,
   sallyIdentity,
 } from './utils';
@@ -91,6 +92,22 @@ function getLastSubscribeMessageInfo(wsAdapter: WebsocketTestAdapter): {
     }
   }
   throw new Error('No Subscribe message found in messageQueue.');
+}
+
+function getLastOneOffQueryMessageInfo(wsAdapter: WebsocketTestAdapter): {
+  requestId: number;
+  queryString: string;
+} {
+  for (let i = wsAdapter.outgoingMessages.length - 1; i >= 0; i--) {
+    const message = wsAdapter.outgoingMessages[i];
+    if (message.tag === 'OneOffQuery') {
+      return {
+        requestId: message.value.requestId,
+        queryString: message.value.queryString,
+      };
+    }
+  }
+  throw new Error('No OneOffQuery message found in messageQueue.');
 }
 
 function makeReducerResult(
@@ -260,6 +277,80 @@ describe('DbConnection', () => {
 
     await onErrorPromise.promise;
     expect(wsAdapter.closed).toBeFalsy();
+  });
+
+  test('querySql sends OneOffQuery and resolves deserialized rows', async () => {
+    const wsAdapter = new WebsocketTestAdapter();
+    const client = DbConnection.builder()
+      .withUri('ws://127.0.0.1:1234')
+      .withDatabaseName('db')
+      .withWSFn(wsAdapter.createWebSocketFn.bind(wsAdapter) as any)
+      .build();
+
+    await client['wsPromise'];
+    wsAdapter.acceptConnection();
+
+    const queryPromise = client.querySql('SELECT * FROM user');
+    await Promise.resolve();
+    const { requestId, queryString } =
+      getLastOneOffQueryMessageInfo(wsAdapter);
+    expect(queryString).toEqual('SELECT * FROM user');
+
+    wsAdapter.sendToClient(
+      ServerMessage.OneOffQueryResult({
+        requestId,
+        result: {
+          ok: makeQueryRows(
+            'user',
+            encodeUser({
+              identity: bobIdentity,
+              username: 'bob',
+            })
+          ),
+        },
+      })
+    );
+
+    await expect(queryPromise).resolves.toEqual([
+      {
+        tableName: 'user',
+        rows: [
+          {
+            identity: bobIdentity,
+            username: 'bob',
+          },
+        ],
+      },
+    ]);
+  });
+
+  test('querySql rejects when OneOffQueryResult returns an error', async () => {
+    const wsAdapter = new WebsocketTestAdapter();
+    const client = DbConnection.builder()
+      .withUri('ws://127.0.0.1:1234')
+      .withDatabaseName('db')
+      .withWSFn(wsAdapter.createWebSocketFn.bind(wsAdapter) as any)
+      .build();
+
+    await client['wsPromise'];
+    wsAdapter.acceptConnection();
+
+    const queryPromise = client.querySql('SELECT * FROM missing_table');
+    await Promise.resolve();
+    const { requestId } = getLastOneOffQueryMessageInfo(wsAdapter);
+
+    wsAdapter.sendToClient(
+      ServerMessage.OneOffQueryResult({
+        requestId,
+        result: {
+          err: 'relation missing_table not found',
+        },
+      })
+    );
+
+    await expect(queryPromise).rejects.toThrow(
+      'relation missing_table not found'
+    );
   });
 
   test('fires row callbacks after reducer resolution in ReducerResult', async () => {
