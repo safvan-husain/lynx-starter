@@ -353,8 +353,9 @@
             the app REST SQL helper. Empty results, multi-table results, and
             unsupported projection shapes now fail with explicit
             <code>OneOffQueryDecodeError</code> messages instead of async
-            handler crashes. Real-server fixtures for generated view/projection
-            rows remain.
+            handler crashes. A real-server SDK integration test now validates
+            typed <code>auth_session</code> and <code>counter</code> reads plus
+            SQL error propagation over WebSocket.
           </td>
         </tr>
         <tr>
@@ -497,7 +498,7 @@
     </p>
     <div class="commit-message">
       <strong>Suggested commit message:</strong>
-      <code>Validate server-defined views in SDK tests and comparison doc</code>
+      <code>Add real-server querySql integration test and refresh comparison doc</code>
     </div>
     <table>
       <caption>
@@ -593,8 +594,9 @@
           <td>
             <span class="ok">First implementation validated</span>: focused SDK
             tests cover successful deserialized rows and query errors;
-            <code>spacetimedb-lynx</code> build and Lynx app build pass. Broader
-            projection and complex SQL fixtures remain.
+            <code>spacetimedb-lynx</code> build and Lynx app build pass.
+            Follow-up hardening and real-server integration coverage landed in
+            later activity rows.
           </td>
         </tr>
         <tr>
@@ -722,6 +724,25 @@
             <code>use_table</code> React tests pass, full
             <code>spacetimedb-lynx</code> test suite passes (183 tests), and
             comparison doc reflects generated view subscription support.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
+          <td>Real-server querySql integration</td>
+          <td>
+            Added a SpacetimeDB-backed SDK integration test that starts a
+            temporary in-memory server, publishes
+            <code>spacetimedb-counter</code>, logs in through REST reducers,
+            connects over WebSocket, and validates typed
+            <code>querySql</code> reads for <code>auth_session</code> and
+            <code>counter</code> plus server SQL error propagation.
+          </td>
+          <td>
+            <span class="ok">Validated</span>:
+            <code>query_sql_integration.test.ts</code> passes when the
+            <code>spacetime</code> CLI is available; the stale one-off query
+            activity note about remaining projection fixtures was removed from
+            this comparison page.
           </td>
         </tr>
         <tr>

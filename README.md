@@ -19,6 +19,21 @@ The script publishes a fresh test database, calls reducers through
 `/v1/database/:db/call/:reducer`, verifies state through
 `/v1/database/:db/sql`, and cleans up its temporary server/data directory.
 
+## SpacetimeDB WebSocket `querySql` integration test
+
+Run the real `spacetimedb-counter` module against a temporary in-memory
+SpacetimeDB server and validate SDK `querySql` over WebSocket for the auth and
+counter reads used by the Lynx app:
+
+```bash
+pnpm -C spacetimedb-lynx test tests/query_sql_integration.test.ts
+```
+
+The test publishes a fresh database, seeds an admin session through REST
+reducers, connects with `DbConnection.querySql(...)`, and checks typed
+`auth_session` / `counter` rows plus SQL error propagation. It skips automatically
+when the `spacetime` CLI is unavailable.
+
 ## Android Empty Projects
 
 - [`AndroidProject`] : Language of Main Activity and build configuration is Kotlin.
