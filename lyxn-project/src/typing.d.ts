@@ -14,6 +14,12 @@ declare let NativeModules: {
       statusCallback: (status: string) => void,
       messageCallbackBase64: (base64: string) => void,
     ): void;
+    connectWithEvents?(
+      url: string,
+      protocol: string,
+      headersJson: string,
+      socketId: number,
+    ): void;
     sendMessage(message: string, callback: (response: string) => void): void;
     sendMessageAsync(message: string): void;
     sendBinary(base64: string): void;

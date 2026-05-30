@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-// import { useSyncExternalStore } from 'use-sync-external-store/shim';
+import { useSyncExternalStore } from 'use-sync-external-store/shim';
 import { useSpacetimeDB } from './useSpacetimeDB';
 import { type EventContextInterface } from '../sdk/db_connection_impl';
 import type { ConnectionState } from './connection_state';
@@ -19,6 +19,13 @@ export interface UseTableCallbacks<RowType> {
   onInsert?: (row: RowType) => void;
   onDelete?: (row: RowType) => void;
   onUpdate?: (oldRow: RowType, newRow: RowType) => void;
+  onError?: (error: Error) => void;
+  /**
+   * Whether the subscription is active.
+   *
+   * Defaults to `true`.
+   */
+  enabled?: boolean;
 }
 
 type MembershipChange = 'enter' | 'leave' | 'stayIn' | 'stayOut';
@@ -62,6 +69,7 @@ export function useTable<TableDef extends UntypedTableDef>(
   callbacks?: UseTableCallbacks<Prettify<RowType<TableDef>>>
 ): [readonly Prettify<RowType<TableDef>>[], boolean] {
   type UseTableRowType = RowType<TableDef>;
+  const enabled = callbacks?.enabled ?? true;
   const accessorName = getQueryAccessorName(query);
   const whereExpr = getQueryWhereClause(query);
 
@@ -88,6 +96,10 @@ export function useTable<TableDef extends UntypedTableDef>(
     readonly Prettify<UseTableRowType>[],
     boolean,
   ] => {
+    if (!enabled) {
+      return [[], true];
+    }
+
     const connection = connectionState.getConnection();
     if (!connection) {
       return [[], false];
@@ -100,7 +112,7 @@ export function useTable<TableDef extends UntypedTableDef>(
       : (Array.from(table.iter()) as Prettify<UseTableRowType>[]);
     return [result, subscribeApplied];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectionState, accessorName, querySql, subscribeApplied]);
+  }, [connectionState, accessorName, querySql, subscribeApplied, enabled]);
 
   // Invalidate the cached snapshot when computeSnapshot changes (e.g. when
   // subscribeApplied flips to true) so getSnapshot() recomputes on the next
@@ -110,22 +122,46 @@ export function useTable<TableDef extends UntypedTableDef>(
   }, [computeSnapshot]);
 
   useEffect(() => {
+    if (!enabled) {
+      lastSnapshotRef.current = null;
+      setSubscribeApplied(false);
+      return;
+    }
+
+    lastSnapshotRef.current = null;
+    setSubscribeApplied(false);
     const connection = connectionState.getConnection()!;
     if (connectionState.isActive && connection) {
       const cancel = connection
         .subscriptionBuilder()
         .onApplied(() => {
+          lastSnapshotRef.current = null;
           setSubscribeApplied(true);
+        })
+        .onError((_ctx, error) => {
+          lastSnapshotRef.current = null;
+          setSubscribeApplied(false);
+          callbacks?.onError?.(error);
         })
         .subscribe(querySql);
       return () => {
         cancel.unsubscribe();
       };
     }
-  }, [querySql, connectionState.isActive, connectionState]);
+  }, [
+    querySql,
+    connectionState.isActive,
+    connectionState,
+    callbacks?.onError,
+    enabled,
+  ]);
 
   const subscribe = useCallback(
     (onStoreChange: () => void) => {
+      if (!enabled) {
+        return () => {};
+      }
+
       const onInsert = (
         ctx: EventContextInterface<UntypedRemoteModule>,
         row: any
@@ -205,9 +241,12 @@ export function useTable<TableDef extends UntypedTableDef>(
       connectionState,
       accessorName,
       querySql,
+      computeSnapshot,
       callbacks?.onDelete,
+      callbacks?.onError,
       callbacks?.onInsert,
       callbacks?.onUpdate,
+      enabled,
     ]
   );
 
@@ -221,6 +260,5 @@ export function useTable<TableDef extends UntypedTableDef>(
     return lastSnapshotRef.current;
   }, [computeSnapshot]);
 
-  // SSR fallback can be the same getter
-  return [[], false] as any;
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

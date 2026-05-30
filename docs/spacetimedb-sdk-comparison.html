@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SpacetimeDB SDK Comparison</title>
+    <style>
+      body {
+        color: #172033;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.45;
+        margin: 32px;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.2;
+        margin: 0 0 8px;
+      }
+
+      p {
+        max-width: 980px;
+      }
+
+      table {
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-top: 24px;
+        width: 100%;
+      }
+
+      caption {
+        font-weight: 700;
+        margin-bottom: 12px;
+        text-align: left;
+      }
+
+      th,
+      td {
+        border: 1px solid #d9dfeb;
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #eef3fb;
+        font-weight: 700;
+      }
+
+      tr:nth-child(even) td {
+        background: #fafcff;
+      }
+
+      code {
+        background: #eef3fb;
+        border-radius: 4px;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.92em;
+        padding: 1px 4px;
+      }
+
+      .ok {
+        color: #0b6b3a;
+        font-weight: 700;
+      }
+
+      .partial {
+        color: #8a5200;
+        font-weight: 700;
+      }
+
+      .missing {
+        color: #a51f2b;
+        font-weight: 700;
+      }
+
+      .sources {
+        font-size: 13px;
+        margin-top: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SpacetimeDB SDK Comparison</h1>
+    <p>
+      This compares the local Lynx port used by this app, the Dart package, and
+      the official SpacetimeDB React integration from the TypeScript SDK. The
+      last column focuses on gaps that matter if <code>spacetimedb-lynx</code>
+      is expected to support full frontend application behavior.
+    </p>
+
+    <table>
+      <caption>
+        Functional comparison
+      </caption>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Official React / TypeScript SDK</th>
+          <th>Dart package</th>
+          <th>Local <code>spacetimedb-lynx</code></th>
+          <th>Gap in <code>spacetimedb-lynx</code></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Package / source</td>
+          <td><code>spacetimedb/react</code>, official TypeScript SDK integration.</td>
+          <td><code>spacetimedb</code> on pub.dev for Dart/Flutter.</td>
+          <td>Local package at <code>spacetimedb-lynx/</code>, consumed via <code>file:../spacetimedb-lynx</code>.</td>
+          <td><span class="partial">Partial</span>: local fork/port must be kept in sync with upstream SDK changes.</td>
+        </tr>
+        <tr>
+          <td>Target runtime</td>
+          <td>Browser/Node TypeScript apps, with React, Vue, and Svelte integrations.</td>
+          <td>Dart and Flutter apps across mobile, desktop, and web.</td>
+          <td>Lynx runtime, with native WebSocket and HTTP adapters.</td>
+          <td><span class="ok">Intentional difference</span>: Lynx needs custom transport, but behavior should mirror official TS SDK.</td>
+        </tr>
+        <tr>
+          <td>Connection setup</td>
+          <td><code>DbConnection.builder()</code>, <code>withUri</code>, <code>withDatabaseName</code>, <code>withToken</code>, connect/disconnect callbacks.</td>
+          <td><code>SpacetimeDbClient.connect(...)</code> with host, database, SSL, auth storage, and initial subscriptions.</td>
+          <td>Uses the same builder API plus <code>withWS(LynxWebSocketAdapter)</code> and <code>withFetchFn(lynxFetch)</code>.</td>
+          <td><span class="ok">Mostly covered</span>.</td>
+        </tr>
+        <tr>
+          <td>Transport</td>
+          <td>WebSocket protocol <code>v2.bsatn.spacetimedb</code>, HTTP helper for temporary websocket token exchange.</td>
+          <td>WebSocket v2, BSATN, reconnect handling, TLS support.</td>
+          <td>Lynx adapter wraps <code>NativeModules.WebSocketModule</code> and base64-encodes binary messages; HTTP uses <code>NativeModules.HttpModule</code> or XHR.</td>
+          <td><span class="partial">Needs hardening</span>: custom adapter is demo-proven but should be tested across iOS, Android, Harmony, reconnect, token refresh, and network errors.</td>
+        </tr>
+        <tr>
+          <td>Generated bindings</td>
+          <td>Generated typed tables, reducers, sum types, indexes, query builders.</td>
+          <td>Generated typed APIs for tables, reducers, enums, and views.</td>
+          <td>Generated bindings exist under <code>lyxn-project/src/spacetimedb/module_bindings/</code>.</td>
+          <td><span class="ok">Covered for this app</span>; generator workflow still needs to stay compatible with upstream schema changes.</td>
+        </tr>
+        <tr>
+          <td>React UI integration</td>
+          <td><code>SpacetimeDBProvider</code>, <code>useSpacetimeDB</code>, <code>useTable</code>, and <code>useReducer</code>.</td>
+          <td>Not React; Flutter-facing reactive APIs such as streams/notifiers.</td>
+          <td>Copies the React integration shape, but this Lynx app currently bypasses <code>useTable</code> for core counter state and uses SQL polling.</td>
+          <td><span class="missing">Major gap</span>: local <code>useTable</code> currently returns <code>[[], false]</code> instead of <code>useSyncExternalStore(...)</code>, so it is not functionally complete.</td>
+        </tr>
+        <tr>
+          <td>Table subscriptions</td>
+          <td><code>useTable(query)</code> automatically subscribes and returns <code>[rows, isReady]</code>; raw <code>subscriptionBuilder()</code> supports SQL and typed queries.</td>
+          <td>SubscribeMulti supports batching multiple SQL subscriptions.</td>
+          <td>Raw <code>subscriptionBuilder()</code> exists and supports SQL strings, arrays, typed queries, and <code>subscribeToAllTables()</code>.</td>
+          <td><span class="partial">Backend present, React hook incomplete</span>: raw subscriptions exist, but the frontend hook layer needs upstream parity.</td>
+        </tr>
+        <tr>
+          <td>Local table cache</td>
+          <td>Client cache exposes <code>connection.db.table.iter()</code>, <code>count()</code>, index access, and row callbacks.</td>
+          <td>Table cache with iteration and insert/update/delete streams.</td>
+          <td>Client cache and row callbacks exist in <code>src/sdk/table_cache.ts</code>.</td>
+          <td><span class="partial">Present but not fully trusted in app</span>: current app uses REST SQL fallback for auth/session reads because table-cache timing was not reliable enough.</td>
+        </tr>
+        <tr>
+          <td>Reducer calls</td>
+          <td>Typed <code>connection.reducers.reducerName(...)</code> and React <code>useReducer(reducer)</code>.</td>
+          <td>Typed reducer calls returning a Future result.</td>
+          <td>Typed reducer accessors exist and are used by login/counter actions.</td>
+          <td><span class="partial">Timing gap</span>: app needed <code>runReducerWithTimeout</code> because reducer ack promises can timeout in Lynx even when server state changed.</td>
+        </tr>
+        <tr>
+          <td>Reducer event callbacks / flags</td>
+          <td>Official docs describe reducer event callbacks and reducer flags such as success-notify behavior.</td>
+          <td>Reducer results and optimistic/offline behavior are package features.</td>
+          <td>Core reducer calls exist; parity for reducer event helper APIs and flags should be audited against upstream.</td>
+          <td><span class="partial">Audit needed</span>: the local port may lag upstream reducer event/flag ergonomics.</td>
+        </tr>
+        <tr>
+          <td>One-off query API</td>
+          <td>Official SDK has protocol support in source; docs focus on subscriptions and client cache for app reads.</td>
+          <td>Subscription API is documented; generated table/view access is the main read path.</td>
+          <td>Source logs: <code>Received OneOffQueryResult but SDK does not expose one-off query APIs yet.</code></td>
+          <td><span class="missing">Gap</span>: app had to add <code>lyxn-project/src/spacetimedb/sqlRead.ts</code> and call REST SQL directly.</td>
+        </tr>
+        <tr>
+          <td>Auth and token persistence</td>
+          <td>Builder accepts <code>withToken</code>; <code>onConnect</code> returns identity and token for persistence.</td>
+          <td>Auth utilities with token persistence support.</td>
+          <td>Token is saved in <code>sessionStore</code> and passed back through <code>withToken</code>.</td>
+          <td><span class="partial">Works, but fragile</span>: stale local app auth needed extra server-session validation in this demo.</td>
+        </tr>
+        <tr>
+          <td>Server-defined views</td>
+          <td>TypeScript SDK supports generated module bindings and query/table style access; current docs emphasize tables/queries more than views.</td>
+          <td>Explicitly documents generated typed views with the same cache/stream APIs as tables.</td>
+          <td>No validated view usage in the Lynx demo.</td>
+          <td><span class="partial">Unknown / unproven</span>: needs a view module fixture and generated binding test before claiming support.</td>
+        </tr>
+        <tr>
+          <td>Offline and optimistic mutations</td>
+          <td>Not a primary documented feature of the official React SDK.</td>
+          <td>Offline mutation queue and optimistic updates are advertised features.</td>
+          <td>No offline mutation queue or optimistic rollback layer.</td>
+          <td><span class="missing">Gap vs Dart</span>, but not necessarily a gap vs official React.</td>
+        </tr>
+        <tr>
+          <td>Reconnect lifecycle</td>
+          <td>Connection manager retains/releases shared connections and exposes active/error state through React context.</td>
+          <td>Reconnect handling is documented as part of the Dart connection layer.</td>
+          <td>Connection manager exists, but the Lynx native adapter/reconnect path has not been fully validated.</td>
+          <td><span class="partial">Needs tests</span>: app-level reconnect, token reuse, dropped socket, and resumed subscriptions should be covered.</td>
+        </tr>
+        <tr>
+          <td>Production readiness for full frontend work</td>
+          <td>Best fit for web React apps because it is official and current.</td>
+          <td>Best fit for Flutter/Dart apps, especially if offline-first behavior is required.</td>
+          <td>Best fit today for controlled Lynx demos and narrow app flows.</td>
+          <td><span class="missing">Not complete yet</span>: fix React hook parity, one-off query support, reducer ack behavior, session consistency, reconnection, and cross-platform native transport tests.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="sources">
+      Sources checked: official TypeScript React docs at
+      <a href="https://spacetimedb.com/docs/clients/typescript/">spacetimedb.com/docs/clients/typescript</a>,
+      official React quickstart at
+      <a href="https://spacetimedb.com/docs/quickstarts/react/">spacetimedb.com/docs/quickstarts/react</a>,
+      official source files under
+      <a href="https://github.com/clockworklabs/SpacetimeDB/tree/master/crates/bindings-typescript/src/react">clockworklabs/SpacetimeDB/crates/bindings-typescript/src/react</a>,
+      Dart package docs at
+      <a href="https://pub.dev/packages/spacetimedb">pub.dev/packages/spacetimedb</a>,
+      and local files under <code>spacetimedb-lynx/src</code> and
+      <code>lyxn-project/src/spacetimedb</code>.
+    </p>
+  </body>
+</html>

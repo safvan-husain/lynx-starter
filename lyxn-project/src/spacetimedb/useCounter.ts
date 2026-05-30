@@ -1,20 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from '@lynx-js/react';
+import { useCallback, useState } from '@lynx-js/react';
+import { useTable } from 'spacetimedb-lynx/react';
 import { writeHostLog } from '../debug/hostFileLogger';
-import {
-  COUNTER_DATABASE_NAME,
-  COUNTER_POLL_INTERVAL_MS,
-  COUNTER_SERVER_URL,
-} from './connectionConfig';
+import { COUNTER_DATABASE_NAME, COUNTER_SERVER_URL } from './connectionConfig';
 import { getErrorMessage } from './errors';
+import type { DbConnection } from './module_bindings';
+import { tables } from './module_bindings';
 import { runReducerWithTimeout } from './reducerUtils';
-import { querySql } from './sqlRead';
 import { useSpacetimeConnection } from './useSpacetimeConnection';
 
 export type CounterConnectionStatus = 'idle' | 'ready' | 'failed';
 
 export { COUNTER_DATABASE_NAME, COUNTER_SERVER_URL };
-
-const COUNTER_SQL = 'select * from counter';
 
 export interface UseCounterOptions {
   isSignedIn: boolean;
@@ -30,77 +26,40 @@ export interface UseCounterReturn {
   status: CounterConnectionStatus;
 }
 
-async function queryCounterValue(): Promise<number> {
-  const payload = await querySql(COUNTER_SQL);
-  const row = payload?.[0]?.rows?.[0];
-  return Number(row?.[1] ?? 0);
-}
-
 export function useCounter({
   isSignedIn,
 }: UseCounterOptions): UseCounterReturn {
   const { connection, status: connectionStatus } = useSpacetimeConnection();
-  const [counterValue, setCounterValue] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isMutating, setIsMutating] = useState(false);
-  const [status, setStatus] = useState<CounterConnectionStatus>('idle');
 
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const requestSerialRef = useRef(0);
-
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
+  const handleSubscriptionError = useCallback((error: Error) => {
+    const message = getErrorMessage(error);
+    writeHostLog('error', '[Counter] Subscription failed', {
+      source: 'useCounter',
+      message,
+    });
+    setErrorMessage(message);
   }, []);
 
-  const fetchCounterSnapshot = useCallback(async () => {
-    const requestId = ++requestSerialRef.current;
-    try {
-      const nextValue = await queryCounterValue();
-      if (requestSerialRef.current !== requestId) {
-        return;
-      }
-      setCounterValue(nextValue);
-      setErrorMessage(null);
-      setStatus('ready');
-    } catch (error) {
-      const message = getErrorMessage(error);
-      writeHostLog('error', '[Counter] Snapshot query failed', {
-        source: 'useCounter',
-        message,
-      });
-      if (requestSerialRef.current !== requestId) {
-        return;
-      }
-      setErrorMessage(message);
-      setStatus('failed');
-      stopPolling();
-    }
-  }, [stopPolling]);
+  const [counterRows, counterReady] = useTable(tables.counter, {
+    enabled: isSignedIn && connectionStatus === 'connected',
+    onError: handleSubscriptionError,
+  });
 
-  useEffect(() => {
-    stopPolling();
-    requestSerialRef.current += 1;
-
-    if (!isSignedIn || connectionStatus !== 'connected') {
-      setStatus('idle');
-      return;
-    }
-
-    void fetchCounterSnapshot();
-    pollIntervalRef.current = setInterval(() => {
-      void fetchCounterSnapshot();
-    }, COUNTER_POLL_INTERVAL_MS);
-
-    return () => {
-      stopPolling();
-    };
-  }, [connectionStatus, fetchCounterSnapshot, isSignedIn, stopPolling]);
+  const counterValue = Number(counterRows[0]?.count ?? 0);
+  const status: CounterConnectionStatus =
+    isSignedIn && connectionStatus === 'connected'
+      ? counterReady
+        ? 'ready'
+        : 'idle'
+      : 'idle';
 
   const runReducer = useCallback(
-    async (label: string, reducerPromise: Promise<unknown>) => {
+    async (
+      label: string,
+      reducer: (activeConnection: DbConnection) => Promise<unknown>,
+    ) => {
       if (!connection || connectionStatus !== 'connected' || isMutating) {
         return;
       }
@@ -109,7 +68,7 @@ export function useCounter({
       setErrorMessage(null);
 
       try {
-        await runReducerWithTimeout(label, reducerPromise);
+        await runReducerWithTimeout(label, reducer(connection));
       } catch (error) {
         const message = getErrorMessage(error);
         writeHostLog('error', '[Counter] Reducer call failed', {
@@ -118,32 +77,35 @@ export function useCounter({
           message,
         });
         setErrorMessage(message);
-      }
-
-      try {
-        await fetchCounterSnapshot();
-      } catch {
-        // Snapshot errors are surfaced by fetchCounterSnapshot.
       } finally {
         setIsMutating(false);
       }
     },
-    [connection, connectionStatus, fetchCounterSnapshot, isMutating],
+    [connection, connectionStatus, isMutating],
   );
 
   const increment = useCallback(
-    () => runReducer('increment', connection!.reducers.incrementCounter({})),
-    [connection, runReducer],
+    () =>
+      runReducer('increment', (activeConnection) =>
+        activeConnection.reducers.incrementCounter({}),
+      ),
+    [runReducer],
   );
 
   const decrement = useCallback(
-    () => runReducer('decrement', connection!.reducers.decrementCounter({})),
-    [connection, runReducer],
+    () =>
+      runReducer('decrement', (activeConnection) =>
+        activeConnection.reducers.decrementCounter({}),
+      ),
+    [runReducer],
   );
 
   const reset = useCallback(
-    () => runReducer('reset', connection!.reducers.resetCounter({})),
-    [connection, runReducer],
+    () =>
+      runReducer('reset', (activeConnection) =>
+        activeConnection.reducers.resetCounter({}),
+      ),
+    [runReducer],
   );
 
   return {

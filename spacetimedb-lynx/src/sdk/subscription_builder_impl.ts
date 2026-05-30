@@ -12,7 +12,9 @@ import type { Values } from '../lib/type_util';
 export class SubscriptionBuilderImpl<RemoteModule extends UntypedRemoteModule> {
   #onApplied?: (ctx: SubscriptionEventContextInterface<RemoteModule>) => void =
     undefined;
-  #onError?: (ctx: ErrorContextInterface<RemoteModule>) => void = undefined;
+  #onError?:
+    | ((ctx: ErrorContextInterface<RemoteModule>, error: Error) => void)
+    | undefined = undefined;
   constructor(private db: DbConnectionImpl<RemoteModule>) {}
 
   /**
@@ -58,7 +60,7 @@ export class SubscriptionBuilderImpl<RemoteModule extends UntypedRemoteModule> {
    * @returns The current `SubscriptionBuilder` instance.
    */
   onError(
-    cb: (ctx: ErrorContextInterface<RemoteModule>) => void
+    cb: (ctx: ErrorContextInterface<RemoteModule>, error: Error) => void
   ): SubscriptionBuilderImpl<RemoteModule> {
     this.#onError = cb;
     return this;
