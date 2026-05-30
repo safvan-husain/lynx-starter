@@ -5,7 +5,6 @@ import { COUNTER_DATABASE_NAME, COUNTER_SERVER_URL } from './connectionConfig';
 import { getErrorMessage } from './errors';
 import type { DbConnection } from './module_bindings';
 import { tables } from './module_bindings';
-import { runReducerWithTimeout } from './reducerUtils';
 import { useSpacetimeConnection } from './useSpacetimeConnection';
 
 export type CounterConnectionStatus = 'idle' | 'ready' | 'failed';
@@ -68,7 +67,7 @@ export function useCounter({
       setErrorMessage(null);
 
       try {
-        await runReducerWithTimeout(label, reducer(connection));
+        await reducer(connection);
       } catch (error) {
         const message = getErrorMessage(error);
         writeHostLog('error', '[Counter] Reducer call failed', {

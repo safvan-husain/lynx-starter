@@ -1,5 +1,10 @@
-#import <Lynx/LynxModule.h>
+#import <Foundation/Foundation.h>
+#import <Lynx/LynxContextModule.h>
 
-@interface StorageModule : NSObject <LynxModule>
+NS_ASSUME_NONNULL_BEGIN
+
+@interface StorageModule : NSObject <LynxContextModule>
 
 @end
+
+NS_ASSUME_NONNULL_END

@@ -8,8 +8,13 @@
       body {
         color: #172033;
         font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", sans-serif;
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
         line-height: 1.45;
         margin: 32px;
       }
@@ -112,7 +117,11 @@
       React-style <code>useTable</code> hook backed by
       <code>useSyncExternalStore</code>, subscription error callbacks, and an
       iOS Lynx WebSocket transport using global native events. The counter UI no
-      longer depends on REST SQL polling for its live counter value.
+      longer depends on REST SQL polling for its live counter value, and reducer
+      actions now await SDK reducer acknowledgements directly instead of using
+      an app-side timeout wrapper. Session continuity now reuses persisted
+      tokens, validates restored auth sessions with a one-off query, and
+      reconnects a dropped managed connection with the latest token.
     </p>
 
     <table>
@@ -131,131 +140,349 @@
       <tbody>
         <tr>
           <td>Package / source</td>
-          <td><code>spacetimedb/react</code>, official TypeScript SDK integration.</td>
+          <td>
+            <code>spacetimedb/react</code>, official TypeScript SDK integration.
+          </td>
           <td><code>spacetimedb</code> on pub.dev for Dart/Flutter.</td>
-          <td>Local package at <code>spacetimedb-lynx/</code>, consumed via <code>file:../spacetimedb-lynx</code>.</td>
-          <td><span class="partial">Partial</span>: local fork/port must be kept in sync with upstream SDK changes.</td>
+          <td>
+            Local package at <code>spacetimedb-lynx/</code>, consumed via
+            <code>file:../spacetimedb-lynx</code>.
+          </td>
+          <td>
+            <span class="partial">Partial</span>: local fork/port must be kept
+            in sync with upstream SDK changes.
+          </td>
         </tr>
         <tr>
           <td>Target runtime</td>
-          <td>Browser/Node TypeScript apps, with React, Vue, and Svelte integrations.</td>
+          <td>
+            Browser/Node TypeScript apps, with React, Vue, and Svelte
+            integrations.
+          </td>
           <td>Dart and Flutter apps across mobile, desktop, and web.</td>
           <td>Lynx runtime, with native WebSocket and HTTP adapters.</td>
-          <td><span class="ok">Intentional difference</span>: Lynx needs custom transport, but behavior should mirror official TS SDK.</td>
+          <td>
+            <span class="ok">Intentional difference</span>: Lynx needs custom
+            transport, but behavior should mirror official TS SDK.
+          </td>
         </tr>
         <tr>
           <td>Connection setup</td>
-          <td><code>DbConnection.builder()</code>, <code>withUri</code>, <code>withDatabaseName</code>, <code>withToken</code>, connect/disconnect callbacks.</td>
-          <td><code>SpacetimeDbClient.connect(...)</code> with host, database, SSL, auth storage, and initial subscriptions.</td>
-          <td>Uses the same builder API plus <code>withWS(LynxWebSocketAdapter)</code> and <code>withFetchFn(lynxFetch)</code>.</td>
+          <td>
+            <code>DbConnection.builder()</code>, <code>withUri</code>,
+            <code>withDatabaseName</code>, <code>withToken</code>,
+            connect/disconnect callbacks.
+          </td>
+          <td>
+            <code>SpacetimeDbClient.connect(...)</code> with host, database,
+            SSL, auth storage, and initial subscriptions.
+          </td>
+          <td>
+            Uses the same builder API plus
+            <code>withWS(LynxWebSocketAdapter)</code> and
+            <code>withFetchFn(lynxFetch)</code>.
+          </td>
           <td><span class="ok">Mostly covered</span>.</td>
         </tr>
         <tr>
           <td>Transport</td>
-          <td>WebSocket protocol <code>v2.bsatn.spacetimedb</code>, HTTP helper for temporary websocket token exchange.</td>
+          <td>
+            WebSocket protocol <code>v2.bsatn.spacetimedb</code>, HTTP helper
+            for temporary websocket token exchange.
+          </td>
           <td>WebSocket v2, BSATN, reconnect handling, TLS support.</td>
-          <td>Lynx adapter wraps <code>NativeModules.WebSocketModule</code>, uses global native status/message events for long-lived sockets, queues sends before open, base64-encodes binary messages, and redacts token-bearing URLs in logs; HTTP uses <code>NativeModules.HttpModule</code> or XHR.</td>
-          <td><span class="partial">Improved</span>: iOS simulator path is validated for login, subscription, and reducer updates. Android, Harmony, reconnect, token refresh, and network-error behavior still need dedicated tests.</td>
+          <td>
+            Lynx adapter wraps <code>NativeModules.WebSocketModule</code>, uses
+            global native status/message events for long-lived sockets, queues
+            sends before open, base64-encodes binary messages, and redacts
+            token-bearing URLs in logs; HTTP uses
+            <code>NativeModules.HttpModule</code> or XHR.
+          </td>
+          <td>
+            <span class="partial">Improved</span>: iOS simulator path is
+            validated for login, subscription, and reducer updates. Android,
+            Harmony, reconnect, token refresh, and network-error behavior still
+            need dedicated tests.
+          </td>
         </tr>
         <tr>
           <td>Generated bindings</td>
-          <td>Generated typed tables, reducers, sum types, indexes, query builders.</td>
+          <td>
+            Generated typed tables, reducers, sum types, indexes, query
+            builders.
+          </td>
           <td>Generated typed APIs for tables, reducers, enums, and views.</td>
-          <td>Generated bindings exist under <code>lyxn-project/src/spacetimedb/module_bindings/</code>.</td>
-          <td><span class="ok">Covered for this app</span>; generator workflow still needs to stay compatible with upstream schema changes.</td>
+          <td>
+            Generated bindings exist under
+            <code>lyxn-project/src/spacetimedb/module_bindings/</code>.
+          </td>
+          <td>
+            <span class="ok">Covered for this app</span>; generator workflow
+            still needs to stay compatible with upstream schema changes.
+          </td>
         </tr>
         <tr>
           <td>React UI integration</td>
-          <td><code>SpacetimeDBProvider</code>, <code>useSpacetimeDB</code>, <code>useTable</code>, and <code>useReducer</code>.</td>
-          <td>Not React; Flutter-facing reactive APIs such as streams/notifiers.</td>
-          <td>Provides <code>SpacetimeDBProvider</code>, <code>useSpacetimeDB</code>, and a working <code>useTable</code>. The counter screen now reads <code>tables.counter</code> through <code>useTable</code> instead of polling REST SQL.</td>
-          <td><span class="partial">Mostly covered for tables</span>: <code>useTable</code> is functional for table queries, filters, insert/delete/update callbacks, disabled state, and subscription errors. Hook parity still needs broader fixtures and a local <code>useReducer</code> audit.</td>
+          <td>
+            <code>SpacetimeDBProvider</code>, <code>useSpacetimeDB</code>,
+            <code>useTable</code>, and <code>useReducer</code>.
+          </td>
+          <td>
+            Not React; Flutter-facing reactive APIs such as streams/notifiers.
+          </td>
+          <td>
+            Provides <code>SpacetimeDBProvider</code>,
+            <code>useSpacetimeDB</code>, and a working <code>useTable</code>.
+            The counter screen now reads <code>tables.counter</code> through
+            <code>useTable</code> instead of polling REST SQL.
+          </td>
+          <td>
+            <span class="partial">Mostly covered for tables</span>:
+            <code>useTable</code> is functional for table queries, filters,
+            insert/delete/update callbacks, disabled state, and subscription
+            errors. Hook parity still needs broader fixtures and a local
+            <code>useReducer</code> audit.
+          </td>
         </tr>
         <tr>
           <td>Table subscriptions</td>
-          <td><code>useTable(query)</code> automatically subscribes and returns <code>[rows, isReady]</code>; raw <code>subscriptionBuilder()</code> supports SQL and typed queries.</td>
+          <td>
+            <code>useTable(query)</code> automatically subscribes and returns
+            <code>[rows, isReady]</code>; raw
+            <code>subscriptionBuilder()</code> supports SQL and typed queries.
+          </td>
           <td>SubscribeMulti supports batching multiple SQL subscriptions.</td>
-          <td>Raw <code>subscriptionBuilder()</code> exists and supports SQL strings, arrays, typed queries, and <code>subscribeToAllTables()</code>. <code>useTable</code> subscribes with generated query SQL and returns live cached rows.</td>
-          <td><span class="partial">Improved</span>: the app validates live table subscription for <code>counter</code>. More coverage is still needed for multi-query subscriptions, unsubscribe timing, reconnect resubscription, and larger result sets.</td>
+          <td>
+            Raw <code>subscriptionBuilder()</code> exists and supports SQL
+            strings, arrays, typed queries, and
+            <code>subscribeToAllTables()</code>.
+            <code>useTable</code> subscribes with generated query SQL and
+            returns live cached rows.
+          </td>
+          <td>
+            <span class="partial">Improved</span>: the app validates live table
+            subscription for <code>counter</code>. More coverage is still needed
+            for multi-query subscriptions, unsubscribe timing, reconnect
+            resubscription, and larger result sets.
+          </td>
         </tr>
         <tr>
           <td>Local table cache</td>
-          <td>Client cache exposes <code>connection.db.table.iter()</code>, <code>count()</code>, index access, and row callbacks.</td>
+          <td>
+            Client cache exposes <code>connection.db.table.iter()</code>,
+            <code>count()</code>, index access, and row callbacks.
+          </td>
           <td>Table cache with iteration and insert/update/delete streams.</td>
-          <td>Client cache and row callbacks exist in <code>src/sdk/table_cache.ts</code>.</td>
-          <td><span class="partial">Improved</span>: counter state now trusts the local cache via <code>useTable</code>. Auth/session reads use WebSocket <code>querySql</code> for deterministic login validation while auth table-cache timing gets broader coverage.</td>
+          <td>
+            Client cache and row callbacks exist in
+            <code>src/sdk/table_cache.ts</code>.
+          </td>
+          <td>
+            <span class="partial">Improved</span>: counter state now trusts the
+            local cache via <code>useTable</code>. Auth/session reads use
+            WebSocket <code>querySql</code> for deterministic login validation
+            while auth table-cache timing gets broader coverage.
+          </td>
         </tr>
         <tr>
           <td>Reducer calls</td>
-          <td>Typed <code>connection.reducers.reducerName(...)</code> and React <code>useReducer(reducer)</code>.</td>
+          <td>
+            Typed <code>connection.reducers.reducerName(...)</code> and React
+            <code>useReducer(reducer)</code>.
+          </td>
           <td>Typed reducer calls returning a Future result.</td>
-          <td>Typed reducer accessors exist and are used by login/counter actions.</td>
-          <td><span class="partial">Timing gap</span>: app needed <code>runReducerWithTimeout</code> because reducer ack promises can timeout in Lynx even when server state changed.</td>
+          <td>
+            Typed reducer accessors are used directly by login, logout,
+            register, and counter actions.
+          </td>
+          <td>
+            <span class="ok">Improved</span>: app-side
+            <code>runReducerWithTimeout</code> was removed; reducer actions now
+            await the SDK reducer promise that resolves/rejects from
+            <code>ReducerResult</code>.
+          </td>
         </tr>
         <tr>
           <td>Reducer event callbacks / flags</td>
-          <td>Official docs describe reducer event callbacks and reducer flags such as success-notify behavior.</td>
-          <td>Reducer results and optimistic/offline behavior are package features.</td>
-          <td>Core reducer calls exist; subscription builder now surfaces <code>onError(ctx, error)</code> for failed subscriptions, but reducer event helper APIs and reducer flags still need upstream parity review.</td>
-          <td><span class="partial">Audit needed</span>: reducer calls work in the admin counter flow, but local ergonomics may still lag upstream reducer event/flag APIs.</td>
+          <td>
+            Official docs describe reducer event callbacks and reducer flags
+            such as success-notify behavior.
+          </td>
+          <td>
+            Reducer results and optimistic/offline behavior are package
+            features.
+          </td>
+          <td>
+            Core reducer calls exist; subscription builder now surfaces
+            <code>onError(ctx, error)</code> for failed subscriptions, but
+            reducer event helper APIs and reducer flags still need upstream
+            parity review.
+          </td>
+          <td>
+            <span class="partial">Audit needed</span>: reducer calls work in the
+            admin counter flow, but local ergonomics may still lag upstream
+            reducer event/flag APIs.
+          </td>
         </tr>
         <tr>
           <td>One-off query API</td>
-          <td>Official SDK has protocol support in source; docs focus on subscriptions and client cache for app reads.</td>
-          <td>Subscription API is documented; generated table/view access is the main read path.</td>
-          <td><code>DbConnection.querySql(sql)</code> now sends a WebSocket <code>OneOffQuery</code>, correlates <code>OneOffQueryResult</code> by request id, and returns generated row objects grouped by table.</td>
-          <td><span class="partial">Improved</span>: auth/session reads no longer use the app REST SQL helper. Remaining work is broader projection coverage and real-server fixtures for complex SQL result shapes.</td>
+          <td>
+            Official SDK has protocol support in source; docs focus on
+            subscriptions and client cache for app reads.
+          </td>
+          <td>
+            Subscription API is documented; generated table/view access is the
+            main read path.
+          </td>
+          <td>
+            <code>DbConnection.querySql(sql)</code> now sends a WebSocket
+            <code>OneOffQuery</code>, correlates
+            <code>OneOffQueryResult</code> by request id, and returns generated
+            row objects grouped by table.
+          </td>
+          <td>
+            <span class="partial">Improved</span>: auth/session reads no longer
+            use the app REST SQL helper. Remaining work is broader projection
+            coverage and real-server fixtures for complex SQL result shapes.
+          </td>
         </tr>
         <tr>
           <td>Auth and token persistence</td>
-          <td>Builder accepts <code>withToken</code>; <code>onConnect</code> returns identity and token for persistence.</td>
+          <td>
+            Builder accepts <code>withToken</code>;
+            <code>onConnect</code> returns identity and token for persistence.
+          </td>
           <td>Auth utilities with token persistence support.</td>
-          <td>Token is saved in <code>sessionStore</code> and passed back through <code>withToken</code>.</td>
-          <td><span class="partial">Works, but still needs hardening</span>: stale local app auth uses server-session validation through <code>querySql</code>; reconnect/session expiry cases still need coverage.</td>
+          <td>
+            Token and app auth user are persisted through the iOS
+            <code>StorageModule</code>, passed back through
+            <code>withToken</code>, and restored sessions are validated against
+            <code>auth_session</code> with <code>querySql</code>.
+          </td>
+          <td>
+            <span class="ok">Improved</span>: iOS simulator relaunch restores
+            the admin session without manual login. Android and Harmony native
+            storage parity still need validation.
+          </td>
         </tr>
         <tr>
           <td>Server-defined views</td>
-          <td>TypeScript SDK supports generated module bindings and query/table style access; current docs emphasize tables/queries more than views.</td>
-          <td>Explicitly documents generated typed views with the same cache/stream APIs as tables.</td>
+          <td>
+            TypeScript SDK supports generated module bindings and query/table
+            style access; current docs emphasize tables/queries more than views.
+          </td>
+          <td>
+            Explicitly documents generated typed views with the same
+            cache/stream APIs as tables.
+          </td>
           <td>No validated view usage in the Lynx demo.</td>
-          <td><span class="partial">Unknown / unproven</span>: needs a view module fixture and generated binding test before claiming support.</td>
+          <td>
+            <span class="partial">Unknown / unproven</span>: needs a view module
+            fixture and generated binding test before claiming support.
+          </td>
         </tr>
         <tr>
           <td>Offline and optimistic mutations</td>
           <td>Not a primary documented feature of the official React SDK.</td>
-          <td>Offline mutation queue and optimistic updates are advertised features.</td>
+          <td>
+            Offline mutation queue and optimistic updates are advertised
+            features.
+          </td>
           <td>No offline mutation queue or optimistic rollback layer.</td>
-          <td><span class="missing">Gap vs Dart</span>, but not necessarily a gap vs official React.</td>
+          <td>
+            <span class="missing">Gap vs Dart</span>, but not necessarily a gap
+            vs official React.
+          </td>
         </tr>
         <tr>
           <td>Reconnect lifecycle</td>
-          <td>Connection manager retains/releases shared connections and exposes active/error state through React context.</td>
-          <td>Reconnect handling is documented as part of the Dart connection layer.</td>
-          <td>Connection manager exists and the iOS transport now uses persistent native event delivery. The normal launch/login/subscription path is validated.</td>
-          <td><span class="partial">Needs tests</span>: app-level reconnect, token reuse, dropped socket, native event cleanup, and resumed subscriptions should be covered.</td>
+          <td>
+            Connection manager retains/releases shared connections and exposes
+            active/error state through React context.
+          </td>
+          <td>
+            Reconnect handling is documented as part of the Dart connection
+            layer.
+          </td>
+          <td>
+            Connection manager exists, uses persistent native event delivery on
+            iOS, and now schedules managed reconnects with the latest token
+            after disconnect/connect-error events.
+          </td>
+          <td>
+            <span class="partial">Improved</span>: unit coverage verifies
+            dropped-socket reconnect with token reuse. Simulator validates
+            relaunch/session continuity, but forced live socket-drop and
+            Android/Harmony lifecycle tests remain.
+          </td>
         </tr>
         <tr>
           <td>Production readiness for full frontend work</td>
-          <td>Best fit for web React apps because it is official and current.</td>
-          <td>Best fit for Flutter/Dart apps, especially if offline-first behavior is required.</td>
-          <td>Best fit today for controlled Lynx apps that need typed reducers plus live table subscriptions on the validated iOS path.</td>
-          <td><span class="partial">Closer, not complete</span>: React table hook, iOS transport, and one-off query gaps were reduced. Remaining gaps are reducer ack behavior, session consistency, reconnection, cross-platform native transport tests, and broader upstream parity coverage.</td>
+          <td>
+            Best fit for web React apps because it is official and current.
+          </td>
+          <td>
+            Best fit for Flutter/Dart apps, especially if offline-first behavior
+            is required.
+          </td>
+          <td>
+            Best fit today for controlled Lynx apps that need typed reducers
+            plus live table subscriptions on the validated iOS path.
+          </td>
+          <td>
+            <span class="partial">Closer, not complete</span>: React table hook,
+            iOS transport, one-off query, reducer ack, and iOS session/reconnect
+            gaps were reduced. Selected next candidate is reducer event callback
+            / flag parity with the official SDK.
+          </td>
         </tr>
       </tbody>
     </table>
 
+    <h2>Validation Workflow</h2>
+    <p>
+      For changes that touch the SpacetimeDB module, transport, reducer calls,
+      subscriptions, auth/session reads, or generated bundle behavior, the
+      current validation path is:
+    </p>
+    <ol>
+      <li>
+        Restart or refresh the local in-memory SpacetimeDB server when the
+        published database may be stale or belongs to a previous anonymous
+        identity.
+      </li>
+      <li>
+        Publish <code>spacetimedb-counter</code> to
+        <code>lynx-counter</code> with anonymous local credentials.
+      </li>
+      <li>
+        Run the Lynx app build and sync the generated bundle into the iOS,
+        Android, and Harmony host assets.
+      </li>
+      <li>Build, install, and relaunch the iOS simulator host app.</li>
+      <li>
+        Validate the app UI against the live database, then confirm state
+        through <code>spacetime sql</code>.
+      </li>
+      <li>
+        Scan the simulator host log for reducer, SQL, subscription, and
+        transport errors before marking the activity as validated.
+      </li>
+    </ol>
+
     <h2>Activity Log</h2>
     <p>
       This log records the SpacetimeDB Lynx work captured by this comparison
-      document and the commit message to use when committing the related changes.
+      document and the commit message to use when committing the related
+      changes.
     </p>
     <div class="commit-message">
       <strong>Suggested commit message:</strong>
-      <code>Improve Lynx SpacetimeDB transport, hooks, and one-off queries</code>
+      <code>Improve Lynx SpacetimeDB session reconnect continuity</code>
     </div>
     <table>
       <caption>
-        Work completed
+        Work completed and next candidates
       </caption>
       <thead>
         <tr>
@@ -269,58 +496,186 @@
         <tr>
           <td>2026-05-30</td>
           <td>Backend REST test harness</td>
-          <td>Added a frontend-free Node integration test path that starts an in-memory SpacetimeDB server, publishes the counter module, calls reducers through REST, and verifies state through SQL.</td>
-          <td><span class="ok">Validated</span>: REST reducer and SQL checks pass without Lynx or mobile frontend.</td>
+          <td>
+            Added a frontend-free Node integration test path that starts an
+            in-memory SpacetimeDB server, publishes the counter module, calls
+            reducers through REST, and verifies state through SQL.
+          </td>
+          <td>
+            <span class="ok">Validated</span>: REST reducer and SQL checks pass
+            without Lynx or mobile frontend.
+          </td>
         </tr>
         <tr>
           <td>2026-05-30</td>
           <td>Authentication flow</td>
-          <td>Tightened login/session behavior so invalid credentials do not fall through to a student screen and admin login uses the seeded <code>admin/admin123</code> account correctly.</td>
-          <td><span class="ok">Validated</span>: simulator login with <code>admin/admin123</code> reaches the admin counter screen.</td>
+          <td>
+            Tightened login/session behavior so invalid credentials do not fall
+            through to a student screen and admin login uses the seeded
+            <code>admin/admin123</code> account correctly.
+          </td>
+          <td>
+            <span class="ok">Validated</span>: simulator login with
+            <code>admin/admin123</code> reaches the admin counter screen.
+          </td>
         </tr>
         <tr>
           <td>2026-05-30</td>
           <td>Lynx transport</td>
-          <td>Improved <code>LynxWebSocketAdapter</code> with native global status/message events, queued sends before open, binary base64 conversion, HTTP fallback support, and token-redacted transport logging.</td>
-          <td><span class="partial">Improved</span>: iOS simulator is validated; Android, Harmony, reconnect, and network-failure tests remain.</td>
+          <td>
+            Improved <code>LynxWebSocketAdapter</code> with native global
+            status/message events, queued sends before open, binary base64
+            conversion, HTTP fallback support, and token-redacted transport
+            logging.
+          </td>
+          <td>
+            <span class="partial">Improved</span>: iOS simulator is validated;
+            Android, Harmony, reconnect, and network-failure tests remain.
+          </td>
         </tr>
         <tr>
           <td>2026-05-30</td>
           <td>React hooks</td>
-          <td>Implemented functional <code>useTable</code> behavior with <code>useSyncExternalStore</code>, table cache snapshots, row callbacks, filtered queries, disabled state, and subscription error handling.</td>
-          <td><span class="ok">Validated for counter</span>: live counter table updates render in the Lynx UI.</td>
+          <td>
+            Implemented functional <code>useTable</code> behavior with
+            <code>useSyncExternalStore</code>, table cache snapshots, row
+            callbacks, filtered queries, disabled state, and subscription error
+            handling.
+          </td>
+          <td>
+            <span class="ok">Validated for counter</span>: live counter table
+            updates render in the Lynx UI.
+          </td>
         </tr>
         <tr>
           <td>2026-05-30</td>
           <td>Counter UI integration</td>
-          <td>Moved counter state from REST SQL polling to <code>useTable(tables.counter)</code> while keeping typed reducer calls for increment, decrement, and reset.</td>
-          <td><span class="ok">Validated</span>: simulator <code>Increase</code> changes UI and SQL count from <code>0</code> to <code>1</code>; <code>Decrease</code> returns it to <code>0</code>.</td>
+          <td>
+            Moved counter state from REST SQL polling to
+            <code>useTable(tables.counter)</code> while keeping typed reducer
+            calls for increment, decrement, and reset.
+          </td>
+          <td>
+            <span class="ok">Validated</span>: simulator
+            <code>Increase</code> changes UI and SQL count from
+            <code>0</code> to <code>1</code>; <code>Decrease</code> returns it
+            to <code>0</code>.
+          </td>
         </tr>
         <tr>
           <td>2026-05-30</td>
           <td>One-off query support</td>
-          <td>Added <code>DbConnection.querySql(sql)</code> over the WebSocket <code>OneOffQuery</code> protocol and moved auth/session reads away from the app REST SQL helper.</td>
-          <td><span class="ok">Validated</span>: focused SDK tests cover successful deserialized rows and query errors; <code>spacetimedb-lynx</code> build and Lynx app build pass.</td>
+          <td>
+            Started from the documented one-off query gap, then added
+            <code>DbConnection.querySql(sql)</code> over the WebSocket
+            <code>OneOffQuery</code> protocol and moved auth/session reads away
+            from the app REST SQL helper.
+          </td>
+          <td>
+            <span class="ok">First implementation validated</span>: focused SDK
+            tests cover successful deserialized rows and query errors;
+            <code>spacetimedb-lynx</code> build and Lynx app build pass. Broader
+            projection and complex SQL fixtures remain.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
+          <td>Reducer ack behavior</td>
+          <td>
+            Removed the app-side <code>runReducerWithTimeout</code> wrapper and
+            the reducer ack timeout constant. Auth and counter actions now await
+            the SDK reducer promises directly.
+          </td>
+          <td>
+            <span class="ok">Validated</span>: Lynx app build passes, focused
+            SDK reducer-result tests pass, and iOS simulator admin
+            increment/decrement updates both UI and SQL without reducer timeout
+            logs.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
+          <td>Restart/rebuild validation</td>
+          <td>
+            Restarted the local in-memory SpacetimeDB path after a local
+            anonymous ownership conflict, republished <code>lynx-counter</code>,
+            rebuilt the Lynx bundle and iOS host, relaunched the simulator app,
+            and retested reducer actions through the UI.
+          </td>
+          <td>
+            <span class="ok">Validated</span>: admin login reached the counter
+            screen; <code>Increase</code> changed UI and SQL count to
+            <code>1</code>; <code>Decrease</code> returned both to
+            <code>0</code>; log scan found no reducer ack, SQL, or subscription
+            failures.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
+          <td>Session and reconnect continuity</td>
+          <td>
+            Added managed reconnect scheduling in
+            <code>ConnectionManager</code>, reused the latest token when
+            rebuilding dropped connections, fixed connection close/error state
+            ordering, made iOS storage a context module, and restored auth
+            sessions through server-side <code>auth_session</code> one-off query
+            validation.
+          </td>
+          <td>
+            <span class="ok">Validated</span>: focused reconnect tests pass;
+            simulator relaunch restores directly to the admin counter screen;
+            <code>Increase</code> and <code>Decrease</code> update UI and SQL;
+            host log scan found no reducer, SQL, subscription, or connection
+            failures.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
+          <td>Next selected gap</td>
+          <td>
+            Selected reducer event callback / flag parity as the next best
+            candidate because reducer calls now acknowledge correctly, but the
+            local SDK still lacks a clear parity layer for official reducer
+            event helpers and reducer call flags.
+          </td>
+          <td>
+            <span class="partial">Needs confirmation</span>: proposed
+            implementation scope is audit upstream reducer event APIs, add local
+            callback/flag support where missing, and validate with focused SDK
+            tests plus simulator reducer flows.
+          </td>
         </tr>
         <tr>
           <td>2026-05-30</td>
           <td>SDK comparison documentation</td>
-          <td>Updated this comparison page so it no longer lists React table hooks, iOS transport, or one-off query support as missing, and added the remaining gaps for production readiness.</td>
-          <td><span class="ok">Done</span>: stale hook, SQL-polling, and REST SQL helper claims were removed.</td>
+          <td>
+            Updated this comparison page so it no longer lists React table
+            hooks, iOS transport, or one-off query support as missing, and added
+            the remaining gaps for production readiness.
+          </td>
+          <td>
+            <span class="ok">Done</span>: stale hook, SQL-polling, and REST SQL
+            helper claims were removed.
+          </td>
         </tr>
       </tbody>
     </table>
 
     <p class="sources">
       Sources checked: official TypeScript React docs at
-      <a href="https://spacetimedb.com/docs/clients/typescript/">spacetimedb.com/docs/clients/typescript</a>,
-      official React quickstart at
-      <a href="https://spacetimedb.com/docs/quickstarts/react/">spacetimedb.com/docs/quickstarts/react</a>,
-      official source files under
-      <a href="https://github.com/clockworklabs/SpacetimeDB/tree/master/crates/bindings-typescript/src/react">clockworklabs/SpacetimeDB/crates/bindings-typescript/src/react</a>,
-      Dart package docs at
-      <a href="https://pub.dev/packages/spacetimedb">pub.dev/packages/spacetimedb</a>,
-      and local files under <code>spacetimedb-lynx/src</code> and
+      <a href="https://spacetimedb.com/docs/clients/typescript/"
+        >spacetimedb.com/docs/clients/typescript</a
+      >, official React quickstart at
+      <a href="https://spacetimedb.com/docs/quickstarts/react/"
+        >spacetimedb.com/docs/quickstarts/react</a
+      >, official source files under
+      <a
+        href="https://github.com/clockworklabs/SpacetimeDB/tree/master/crates/bindings-typescript/src/react"
+        >clockworklabs/SpacetimeDB/crates/bindings-typescript/src/react</a
+      >, Dart package docs at
+      <a href="https://pub.dev/packages/spacetimedb"
+        >pub.dev/packages/spacetimedb</a
+      >, and local files under <code>spacetimedb-lynx/src</code> and
       <code>lyxn-project/src/spacetimedb</code>.
     </p>
   </body>

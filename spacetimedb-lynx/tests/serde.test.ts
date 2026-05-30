@@ -57,7 +57,8 @@ describe('it correctly serializes and deserializes algebraic values', () => {
 
   test('when it serializes and deserializes an Identity type', () => {
     const value = {
-      __identity__: BigInt(1234567890123456789012345678901234567890n),
+      __identity__:
+        '00000000000000000000000000000003a0c92075c0dbf3b8acbc5f96ce3f0ad2',
     };
 
     const algebraic_type = Identity.getAlgebraicType();
@@ -86,7 +87,7 @@ describe('it correctly serializes and deserializes algebraic values', () => {
     const value = {
       tag: 'Interval',
       value: {
-        __time_duration_micros__: BigInt(1234567890123456789n),
+        __time_duration_micros__: '112210f47de98115',
       },
     };
 
@@ -111,7 +112,7 @@ describe('it correctly serializes and deserializes algebraic values', () => {
     const value = {
       tag: 'Time',
       value: {
-        __timestamp_micros_since_unix_epoch__: BigInt(1234567890123456789n),
+        __timestamp_micros_since_unix_epoch__: '112210f47de98115',
       },
     };
 
@@ -133,9 +134,8 @@ describe('it correctly serializes and deserializes algebraic values', () => {
   });
 
   test('when it serializes and deserializes a ConnectionId ', () => {
-    const U128_MAX = (1n << 128n) - 1n;
     const value = {
-      __connection_id__: U128_MAX,
+      __connection_id__: 'ffffffffffffffffffffffffffffffff',
     };
 
     const algebraic_type = ConnectionId.getAlgebraicType();
@@ -155,14 +155,12 @@ describe('it correctly serializes and deserializes algebraic values', () => {
       algebraic_type
     );
 
-    console.log(deserializedValue);
-
     expect(deserializedValue).toEqual(value);
   });
 
   test('when it serializes and deserializes an Uuid ', () => {
     const value = {
-      __uuid__: BigInt('0x1234567890abcdef1234567890abcdef'),
+      __uuid__: '1234567890abcdef1234567890abcdef',
     };
 
     const algebraic_type = Uuid.getAlgebraicType();

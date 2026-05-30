@@ -1,14 +1,15 @@
-import { getErrorMessage } from '../spacetimedb/errors';
-import type { DbConnection } from '../spacetimedb/module_bindings';
-import type { SpacetimeConnectionStatus } from '../spacetimedb/useSpacetimeConnection';
+import { getErrorMessage } from "../spacetimedb/errors";
+import type { DbConnection } from "../spacetimedb/module_bindings";
+import type { SpacetimeConnectionStatus } from "../spacetimedb/useSpacetimeConnection";
 import {
+  fetchCurrentSessionUser,
   login,
   logout,
   readCurrentSessionUser,
   register as registerAccount,
-} from './authApi';
-import { clearAuthSession, loadAuthUser, saveAuthUser } from './sessionStore';
-import type { AppRole, AuthStatus, AuthUser } from './types';
+} from "./authApi";
+import { clearAuthSession, loadAuthUser, saveAuthUser } from "./sessionStore";
+import type { AppRole, AuthStatus, AuthUser } from "./types";
 
 export type SessionConnection = {
   connection: DbConnection | null;
@@ -22,33 +23,33 @@ export type SessionSnapshot = {
 };
 
 export const CONNECTION_WAIT_MESSAGE =
-  'Waiting for database connection. Try again in a moment.';
+  "Waiting for database connection. Try again in a moment.";
 
 export type ConnectionStatusPresentation = {
   label: string;
-  tone: 'error' | 'info' | 'success';
+  tone: "error" | "info" | "success";
 };
 
 export function isConnectionReady(spacetime: SessionConnection): boolean {
-  return spacetime.connection !== null && spacetime.status === 'connected';
+  return spacetime.connection !== null && spacetime.status === "connected";
 }
 
 export function getConnectionStatusPresentation(
   spacetime: SessionConnection,
 ): ConnectionStatusPresentation {
-  if (spacetime.status === 'connected') {
-    return { label: 'Database connected', tone: 'success' };
+  if (spacetime.status === "connected") {
+    return { label: "Database connected", tone: "success" };
   }
-  if (spacetime.status === 'failed') {
-    return { label: 'Database offline', tone: 'error' };
+  if (spacetime.status === "failed") {
+    return { label: "Database offline", tone: "error" };
   }
-  return { label: 'Connecting…', tone: 'info' };
+  return { label: "Connecting…", tone: "info" };
 }
 
 export function isSignedIn(
-  snapshot: Pick<SessionSnapshot, 'currentUser' | 'status'>,
+  snapshot: Pick<SessionSnapshot, "currentUser" | "status">,
 ): boolean {
-  return snapshot.status === 'signedIn' && snapshot.currentUser !== null;
+  return snapshot.status === "signedIn" && snapshot.currentUser !== null;
 }
 
 export function signedOutSnapshot(
@@ -57,7 +58,7 @@ export function signedOutSnapshot(
   return {
     currentUser: null,
     errorMessage,
-    status: 'signedOut',
+    status: "signedOut",
   };
 }
 
@@ -65,7 +66,7 @@ export function signedInSnapshot(user: AuthUser): SessionSnapshot {
   return {
     currentUser: user,
     errorMessage: null,
-    status: 'signedIn',
+    status: "signedIn",
   };
 }
 
@@ -79,15 +80,17 @@ function requireConnection(
 
 export async function restoreSession(
   spacetime: SessionConnection,
-): Promise<Pick<SessionSnapshot, 'currentUser' | 'status'>> {
+): Promise<Pick<SessionSnapshot, "currentUser" | "status">> {
   const storedUser = await loadAuthUser();
   const { connection, status } = spacetime;
 
-  if (!storedUser || !connection || status !== 'connected') {
+  if (!storedUser || !connection || status !== "connected") {
     return signedOutSnapshot();
   }
 
-  const serverUser = readCurrentSessionUser(connection);
+  const serverUser =
+    readCurrentSessionUser(connection) ??
+    (await fetchCurrentSessionUser(connection));
   if (
     !serverUser ||
     serverUser.username !== storedUser.username ||
@@ -99,7 +102,7 @@ export async function restoreSession(
 
   return {
     currentUser: serverUser,
-    status: 'signedIn',
+    status: "signedIn",
   };
 }
 
@@ -111,7 +114,7 @@ export async function signInSession(
   requireConnection(spacetime);
 
   if (!username.trim() || !password) {
-    throw new Error('Enter a username and password.');
+    throw new Error("Enter a username and password.");
   }
 
   const nextUser = await login(spacetime.connection, username, password);
@@ -123,7 +126,7 @@ export async function signOutSession(
   spacetime: SessionConnection,
 ): Promise<void> {
   const { connection, status } = spacetime;
-  if (connection && status === 'connected') {
+  if (connection && status === "connected") {
     try {
       await logout(connection);
     } catch {
@@ -140,13 +143,13 @@ export function validateRegisterInput(
   role: AppRole,
 ): string | null {
   if (username.trim().length < 3) {
-    return 'Username must be at least 3 characters.';
+    return "Username must be at least 3 characters.";
   }
   if (password.length < 6) {
-    return 'Password must be at least 6 characters.';
+    return "Password must be at least 6 characters.";
   }
-  if (role === 'admin') {
-    return 'Admin accounts can only be created by an existing admin.';
+  if (role === "admin") {
+    return "Admin accounts can only be created by an existing admin.";
   }
   return null;
 }

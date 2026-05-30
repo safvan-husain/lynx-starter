@@ -1,12 +1,11 @@
-import { roleFromUserRole, userRoleFromAppRole } from './capabilities';
-import { getErrorMessage } from '../spacetimedb/errors';
-import type { DbConnection } from '../spacetimedb/module_bindings';
+import { roleFromUserRole, userRoleFromAppRole } from "./capabilities";
+import { getErrorMessage } from "../spacetimedb/errors";
+import type { DbConnection } from "../spacetimedb/module_bindings";
 import type {
   AppUser,
   AuthSession,
-} from '../spacetimedb/module_bindings/types';
-import { runReducerWithTimeout } from '../spacetimedb/reducerUtils';
-import type { AppRole, AuthUser } from './types';
+} from "../spacetimedb/module_bindings/types";
+import type { AppRole, AuthUser } from "./types";
 
 const LOGIN_SESSION_WAIT_MS = 3000;
 const LOGIN_SESSION_POLL_MS = 100;
@@ -21,18 +20,15 @@ function escapeSqlString(value: string): string {
   return value.replace(/'/g, "''");
 }
 
-type SqlTableResult = Awaited<ReturnType<DbConnection['querySql']>>;
+type SqlTableResult = Awaited<ReturnType<DbConnection["querySql"]>>;
 
-function getTableRows<Row>(
-  result: SqlTableResult,
-  tableName: string,
-): Row[] {
+function getTableRows<Row>(result: SqlTableResult, tableName: string): Row[] {
   return (result.find((table) => table.tableName === tableName)?.rows ??
     []) as Row[];
 }
 
 function normalizeIdentityHex(value: string): string {
-  return value.toLowerCase().replace(/^0x/, '');
+  return value.toLowerCase().replace(/^0x/, "");
 }
 
 export async function fetchUserRole(
@@ -42,7 +38,7 @@ export async function fetchUserRole(
   const normalized = username.trim().toLowerCase();
   const query = `select * from app_user where username = '${escapeSqlString(normalized)}'`;
   const payload = await connection.querySql(query);
-  const user = getTableRows<AppUser>(payload, 'app_user')[0];
+  const user = getTableRows<AppUser>(payload, "app_user")[0];
   return user ? roleFromUserRole(user.role) : null;
 }
 
@@ -54,19 +50,19 @@ async function usernameExists(
 }
 
 function parseIdentityValue(value: unknown): string | null {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return normalizeIdentityHex(value);
   }
 
-  if (Array.isArray(value) && typeof value[0] === 'string') {
+  if (Array.isArray(value) && typeof value[0] === "string") {
     return normalizeIdentityHex(value[0]);
   }
 
   if (
     value &&
-    typeof value === 'object' &&
-    'toHexString' in value &&
-    typeof value.toHexString === 'function'
+    typeof value === "object" &&
+    "toHexString" in value &&
+    typeof value.toHexString === "function"
   ) {
     return normalizeIdentityHex(value.toHexString());
   }
@@ -74,7 +70,7 @@ function parseIdentityValue(value: unknown): string | null {
   return null;
 }
 
-async function fetchCurrentSessionUser(
+export async function fetchCurrentSessionUser(
   connection: DbConnection,
 ): Promise<AuthUser | null> {
   const identity = connection.identity;
@@ -83,8 +79,8 @@ async function fetchCurrentSessionUser(
   }
 
   const identityHex = normalizeIdentityHex(identity.toHexString());
-  const payload = await connection.querySql('select * from auth_session');
-  const rows = getTableRows<AuthSession>(payload, 'auth_session');
+  const payload = await connection.querySql("select * from auth_session");
+  const rows = getTableRows<AuthSession>(payload, "auth_session");
 
   for (const row of rows) {
     const sessionIdentity = parseIdentityValue(row.identity);
@@ -93,7 +89,7 @@ async function fetchCurrentSessionUser(
 
     if (
       sessionIdentity === identityHex &&
-      typeof username === 'string' &&
+      typeof username === "string" &&
       role
     ) {
       return {
@@ -154,13 +150,10 @@ export async function login(
   const normalizedUsername = username.trim().toLowerCase();
 
   try {
-    await runReducerWithTimeout(
-      'login',
-      connection.reducers.login({
-        username: normalizedUsername,
-        password,
-      }),
-    );
+    await connection.reducers.login({
+      username: normalizedUsername,
+      password,
+    });
   } catch (error) {
     throw new Error(getErrorMessage(error));
   }
@@ -171,14 +164,14 @@ export async function login(
   }
 
   if (await usernameExists(connection, normalizedUsername)) {
-    throw new Error('Password is incorrect.');
+    throw new Error("Password is incorrect.");
   }
 
-  throw new Error('Username does not exist.');
+  throw new Error("Username does not exist.");
 }
 
 export async function logout(connection: DbConnection): Promise<void> {
-  await runReducerWithTimeout('logout', connection.reducers.logout({}));
+  await connection.reducers.logout({});
 }
 
 export async function register(
@@ -188,14 +181,11 @@ export async function register(
   role: AppRole,
 ): Promise<void> {
   try {
-    await runReducerWithTimeout(
-      'register',
-      connection.reducers.register({
-        username: username.trim(),
-        password,
-        role: userRoleFromAppRole(role),
-      }),
-    );
+    await connection.reducers.register({
+      username: username.trim(),
+      password,
+      role: userRoleFromAppRole(role),
+    });
   } catch (error) {
     throw new Error(getErrorMessage(error));
   }

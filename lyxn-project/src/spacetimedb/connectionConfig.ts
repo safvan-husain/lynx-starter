@@ -6,4 +6,3 @@ export const COUNTER_SERVER_URL =
 
 export const CONNECT_TIMEOUT_MS = 8000;
 export const COUNTER_POLL_INTERVAL_MS = 1500;
-export const REDUCER_ACK_TIMEOUT_MS = 750;

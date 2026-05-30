@@ -136,7 +136,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter()).length).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
@@ -167,7 +167,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter()).length).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
@@ -198,7 +198,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter()).length).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
@@ -214,7 +214,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter()).length).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(0);
@@ -243,7 +243,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
             expect(callbackHistory[0].type).toEqual('insert');
@@ -258,7 +258,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(0n);
+            expect(tableCache.count()).toEqual(0);
             expect(callbackHistory.length).toEqual(1);
             expect(callbackHistory[0].type).toEqual('delete');
             expect(callbackHistory[0].row).toEqual(player);
@@ -299,7 +299,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
             expect(callbackHistory[0].type).toEqual('insert');
@@ -315,7 +315,7 @@ describe('TableCache', () => {
         assertions: [
           ({ tableCache, callbackHistory }) => {
             // We still have one reference left, so it isn't actually deleted.
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(0);
           },
@@ -329,7 +329,7 @@ describe('TableCache', () => {
         assertions: [
           ({ tableCache, callbackHistory }) => {
             // Now it is actually deleted.
-            expect(tableCache.count()).toEqual(0n);
+            expect(tableCache.count()).toEqual(0);
             expect(callbackHistory.length).toEqual(1);
             expect(callbackHistory[0].type).toEqual('delete');
             expect(callbackHistory[0].row).toEqual(player);
@@ -344,7 +344,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory).toEqual([insertEvent(player)]);
           },
@@ -357,7 +357,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory).toEqual([]);
           },
@@ -370,7 +370,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(0n);
+            expect(tableCache.count()).toEqual(0);
             expect(callbackHistory).toEqual([deleteEvent(mkPlayer())]);
           },
         ],
@@ -396,7 +396,7 @@ describe('TableCache', () => {
         expect(row).toEqual(op.row);
       });
       expect(callbacks.length).toEqual(1);
-      expect(tableCache.count()).toEqual(1n);
+      expect(tableCache.count()).toEqual(1);
       callbacks.forEach(cb => {
         cb.cb();
       });
@@ -439,7 +439,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter()).length).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
@@ -470,7 +470,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter()).length).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
@@ -501,7 +501,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter()).length).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
@@ -517,7 +517,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter()).length).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(0);
@@ -546,7 +546,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
             expect(callbackHistory[0].type).toEqual('insert');
@@ -561,7 +561,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(0n);
+            expect(tableCache.count()).toEqual(0);
             expect(callbackHistory.length).toEqual(1);
             expect(callbackHistory[0].type).toEqual('delete');
             expect(callbackHistory[0].row).toEqual(player);
@@ -590,7 +590,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(mkPlayer('jeff'));
             expect(callbackHistory).toEqual([insertEvent(mkPlayer('jeff'))]);
           },
@@ -606,7 +606,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(
               mkPlayer('jeffv2')
             );
@@ -650,7 +650,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(1);
             expect(callbackHistory[0].type).toEqual('insert');
@@ -666,7 +666,7 @@ describe('TableCache', () => {
         assertions: [
           ({ tableCache, callbackHistory }) => {
             // We still have one reference left, so it isn't actually deleted.
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory.length).toEqual(0);
           },
@@ -680,7 +680,7 @@ describe('TableCache', () => {
         assertions: [
           ({ tableCache, callbackHistory }) => {
             // Now it is actually deleted.
-            expect(tableCache.count()).toEqual(0n);
+            expect(tableCache.count()).toEqual(0);
             expect(callbackHistory.length).toEqual(1);
             expect(callbackHistory[0].type).toEqual('delete');
             expect(callbackHistory[0].row).toEqual(player);
@@ -695,7 +695,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory).toEqual([insertEvent(player)]);
           },
@@ -708,7 +708,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(1n);
+            expect(tableCache.count()).toEqual(1);
             expect(Array.from(tableCache.iter())[0]).toEqual(player);
             expect(callbackHistory).toEqual([]);
           },
@@ -721,7 +721,7 @@ describe('TableCache', () => {
         },
         assertions: [
           ({ tableCache, callbackHistory }) => {
-            expect(tableCache.count()).toEqual(0n);
+            expect(tableCache.count()).toEqual(0);
             expect(callbackHistory).toEqual([deleteEvent(mkPlayer())]);
           },
         ],
@@ -747,7 +747,7 @@ describe('TableCache', () => {
         expect(row).toEqual(op.row);
       });
       expect(callbacks.length).toEqual(1);
-      expect(tableCache.count()).toEqual(1n);
+      expect(tableCache.count()).toEqual(1);
       callbacks.forEach(cb => {
         cb.cb();
       });
@@ -757,6 +757,6 @@ describe('TableCache', () => {
 
   test('should be empty on creation', () => {
     const tableCache = new TableCacheImpl(tables.player.tableDef);
-    expect(tableCache.count()).toEqual(0n);
+    expect(tableCache.count()).toEqual(0);
   });
 });

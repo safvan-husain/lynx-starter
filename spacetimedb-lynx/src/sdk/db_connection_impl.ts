@@ -1,8 +1,8 @@
-import { StdbUrl } from '../lib/url';
-import { ConnectionId, ProductBuilder, ProductType } from '../';
-import { AlgebraicType, type ComparablePrimitive } from '../';
-import { BinaryReader } from '../';
-import { BinaryWriter } from '../';
+import { StdbUrl } from "../lib/url";
+import { ConnectionId, ProductBuilder, ProductType } from "../";
+import { AlgebraicType, type ComparablePrimitive } from "../";
+import { BinaryReader } from "../";
+import { BinaryWriter } from "../";
 import {
   BsatnRowList,
   ClientMessage,
@@ -11,57 +11,57 @@ import {
   ServerMessage,
   TableUpdateRows,
   UnsubscribeFlags,
-} from './client_api/types';
-import { type FetchFn } from './websocket_decompress_adapter.ts';
-import { ClientCache } from './client_cache.ts';
-import { DbConnectionBuilder } from './db_connection_builder.ts';
-import { INTERNAL_REMOTE_MODULE } from './internal.ts';
-import { type DbContext } from './db_context.ts';
-import type { Event } from './event.ts';
+} from "./client_api/types";
+import { type FetchFn } from "./websocket_decompress_adapter.ts";
+import { ClientCache } from "./client_cache.ts";
+import { DbConnectionBuilder } from "./db_connection_builder.ts";
+import { INTERNAL_REMOTE_MODULE } from "./internal.ts";
+import { type DbContext } from "./db_context.ts";
+import type { Event } from "./event.ts";
 import {
   type ErrorContextInterface,
   type EventContextInterface,
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
-} from './event_context.ts';
-import { EventEmitter } from './event_emitter.ts';
-import type { Deserializer, Identity, InferTypeOfRow, Serializer } from '../';
+} from "./event_context.ts";
+import { EventEmitter } from "./event_emitter.ts";
+import type { Deserializer, Identity, InferTypeOfRow, Serializer } from "../";
 import type {
   ProcedureResultMessage,
   ReducerResultMessage,
-} from './message_types.ts';
-import type { ReducerEvent } from './reducer_event.ts';
-import { type UntypedRemoteModule } from './spacetime_module.ts';
-import { makeQueryBuilder } from '../lib/query';
+} from "./message_types.ts";
+import type { ReducerEvent } from "./reducer_event.ts";
+import { type UntypedRemoteModule } from "./spacetime_module.ts";
+import { makeQueryBuilder } from "../lib/query";
 import {
   type TableCache,
   type Operation,
   type PendingCallback,
   type TableUpdate as CacheTableUpdate,
-} from './table_cache.ts';
+} from "./table_cache.ts";
 import {
   WebsocketDecompressAdapter,
   type WebsocketAdapter,
-} from './websocket_decompress_adapter.ts';
+} from "./websocket_decompress_adapter.ts";
 import {
   SubscriptionBuilderImpl,
   SubscriptionHandleImpl,
   SubscriptionManager,
   type SubscribeEvent,
-} from './subscription_builder_impl.ts';
-import { stdbLogger, stringify } from './logger.ts';
-import { fromByteArray } from 'base64-js';
+} from "./subscription_builder_impl.ts";
+import { stdbLogger, stringify } from "./logger.ts";
+import { fromByteArray } from "base64-js";
 import type {
   ReducerEventInfo,
   ReducersView,
   SubscriptionEventCallback,
-} from './reducers.ts';
-import type { ClientDbView } from './db_view.ts';
-import type { RowType, UntypedTableDef } from '../lib/table.ts';
-import type { ProceduresView } from './procedures.ts';
-import type { Values } from '../lib/type_util.ts';
-import type { TransactionUpdate } from './client_api/types.ts';
-import { InternalError, SenderError } from '../lib/errors.ts';
+} from "./reducers.ts";
+import type { ClientDbView } from "./db_view.ts";
+import type { RowType, UntypedTableDef } from "../lib/table.ts";
+import type { ProceduresView } from "./procedures.ts";
+import type { Values } from "../lib/type_util.ts";
+import type { TransactionUpdate } from "./client_api/types.ts";
+import { InternalError, SenderError } from "../lib/errors.ts";
 
 export {
   DbConnectionBuilder,
@@ -83,7 +83,7 @@ export type {
   ReducerEvent,
 };
 
-export type ConnectionEvent = 'connect' | 'disconnect' | 'connectError';
+export type ConnectionEvent = "connect" | "disconnect" | "connectError";
 
 export type DbConnectionConfig<RemoteModule extends UntypedRemoteModule> = {
   uri: StdbUrl;
@@ -94,13 +94,13 @@ export type DbConnectionConfig<RemoteModule extends UntypedRemoteModule> = {
   createWSFn: typeof WebsocketDecompressAdapter.createWebSocketFn;
   WS: any;
   fetchFn: FetchFn;
-  compression: 'gzip' | 'none';
+  compression: "gzip" | "none";
   lightMode: boolean;
   confirmedReads?: boolean;
   remoteModule: RemoteModule;
 };
 
-type ProcedureCallback = (result: ProcedureResultMessage['result']) => void;
+type ProcedureCallback = (result: ProcedureResultMessage["result"]) => void;
 
 export type OneOffQueryTableResult<Row = unknown> = {
   tableName: string;
@@ -113,9 +113,9 @@ type OneOffQueryWireResult =
       err: string;
     };
 
-export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
-  implements DbContext<RemoteModule>
-{
+export class DbConnectionImpl<
+  RemoteModule extends UntypedRemoteModule,
+> implements DbContext<RemoteModule> {
   /**
    * Whether or not the connection is active.
    */
@@ -168,7 +168,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   #remoteModule: RemoteModule;
   #reducerCallbacks = new Map<
     number,
-    (result: ReducerResultMessage['result']) => void
+    (result: ReducerResultMessage["result"]) => void
   >();
   #reducerCallInfo = new Map<number, { name: string; args: object }>();
   #procedureCallbacks = new Map<number, ProcedureCallback>();
@@ -185,7 +185,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     string,
     { serializeArgs: Serializer<any>; deserializeReturn: Deserializer<any> }
   >;
-  #sourceNameToTableDef: Record<string, Values<RemoteModule['tables']>>;
+  #sourceNameToTableDef: Record<string, Values<RemoteModule["tables"]>>;
 
   // These fields are not part of the public API, but in a pinch you
   // could use JavaScript to access them by bypassing TypeScript's
@@ -209,11 +209,11 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     WS,
     fetchFn,
   }: DbConnectionConfig<RemoteModule>) {
-    stdbLogger('info', 'Connecting to SpacetimeDB WS...');
+    stdbLogger("info", "Connecting to SpacetimeDB WS...");
 
     const url = new StdbUrl(uri.toString());
     if (!/^wss?:/.test(url.protocol)) {
-      url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+      url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
     }
 
     this.identity = identity;
@@ -226,10 +226,10 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     this.#sourceNameToTableDef = Object.create(null);
     for (const table of Object.values(remoteModule.tables)) {
       this.#rowDeserializers[table.sourceName] = ProductType.makeDeserializer(
-        table.rowType
+        table.rowType,
       );
       this.#sourceNameToTableDef[table.sourceName] = table as Values<
-        RemoteModule['tables']
+        RemoteModule["tables"]
       >;
     }
 
@@ -245,16 +245,16 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     for (const procedure of remoteModule.procedures) {
       this.#procedureSerializers[procedure.name] = {
         serializeArgs: ProductType.makeSerializer(
-          new ProductBuilder(procedure.params).algebraicType.value
+          new ProductBuilder(procedure.params).algebraicType.value,
         ),
         deserializeReturn: AlgebraicType.makeDeserializer(
-          procedure.returnType.algebraicType
+          procedure.returnType.algebraicType,
         ),
       };
     }
 
     const connectionId = this.connectionId.toHexString();
-    url.searchParams.set('connection_id', connectionId);
+    url.searchParams.set("connection_id", connectionId);
 
     this.clientCache = new ClientCache<RemoteModule>();
     this.db = this.#makeDbView();
@@ -264,7 +264,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     this.wsPromise = createWSFn({
       url,
       nameOrAddress,
-      wsProtocol: 'v2.bsatn.spacetimedb',
+      wsProtocol: "v2.bsatn.spacetimedb",
       authToken: token,
       compression: compression,
       lightMode: lightMode,
@@ -272,24 +272,24 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       WS: WS,
       fetchFn: fetchFn,
     })
-      .then(v => {
+      .then((v) => {
         this.ws = v;
 
         this.ws.onclose = () => {
-          this.#emitter.emit('disconnect', this);
           this.isActive = false;
+          this.#emitter.emit("disconnect", this);
         };
         this.ws.onerror = (e: ErrorEvent) => {
-          this.#emitter.emit('connectError', this, e);
           this.isActive = false;
+          this.#emitter.emit("connectError", this, e);
         };
         this.ws.onopen = this.#handleOnOpen.bind(this);
         this.ws.onmessage = this.#handleOnMessage.bind(this);
         return v;
       })
-      .catch(e => {
-        stdbLogger('error', 'Error connecting to SpacetimeDB WS');
-        this.#emitter.emit('connectError', this, e);
+      .catch((e) => {
+        stdbLogger("error", "Error connecting to SpacetimeDB WS");
+        this.#emitter.emit("connectError", this, e);
 
         return undefined;
       });
@@ -355,14 +355,16 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
         this.#procedureSerializers[procedureName];
 
       (out as any)[key] = (
-        params: InferTypeOfRow<typeof procedure.params>
+        params: InferTypeOfRow<typeof procedure.params>,
       ): Promise<any> => {
         writer.clear();
         serializeArgs(writer, params);
         const argsBuffer = writer.getBuffer();
-        return this.callProcedure(procedureName, argsBuffer).then(returnBuf => {
-          return deserializeReturn(new BinaryReader(returnBuf));
-        });
+        return this.callProcedure(procedureName, argsBuffer).then(
+          (returnBuf) => {
+            return deserializeReturn(new BinaryReader(returnBuf));
+          },
+        );
       };
     }
 
@@ -372,10 +374,10 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   #makeEventContext(
     event: Event<
       ReducerEventInfo<
-        RemoteModule['reducers'][number]['name'],
-        InferTypeOfRow<RemoteModule['reducers'][number]['params']>
+        RemoteModule["reducers"][number]["name"],
+        InferTypeOfRow<RemoteModule["reducers"][number]["params"]>
       >
-    >
+    >,
   ): EventContextInterface<RemoteModule> {
     // Bind methods to preserve `this` (#private fields safe)
     return {
@@ -410,7 +412,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       SubscribeEvent,
       SubscriptionEventCallback<RemoteModule>
     >,
-    querySql: string[]
+    querySql: string[],
   ): number {
     const querySetId = this.#getNextQueryId();
     this.#subscriptionManager.subscriptions.set(querySetId, {
@@ -423,7 +425,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
         queryStrings: querySql,
         querySetId: { id: querySetId },
         requestId,
-      })
+      }),
     );
     return querySetId;
   }
@@ -435,14 +437,14 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
         querySetId: { id: querySetId },
         requestId,
         flags: UnsubscribeFlags.SendDroppedRows,
-      })
+      }),
     );
   }
 
   #parseRowList(
-    type: 'insert' | 'delete',
+    type: "insert" | "delete",
     tableName: string,
-    rowList: BsatnRowList
+    rowList: BsatnRowList,
   ): Operation[] {
     const buffer = rowList.rowsData;
     const reader = new BinaryReader(buffer);
@@ -453,7 +455,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     // TODO: performance
     const columnsArray = Object.entries(table.columns);
     const primaryKeyColumnEntry = columnsArray.find(
-      col => col[1].columnMetadata.isPrimaryKey
+      (col) => col[1].columnMetadata.isPrimaryKey,
     );
     let previousOffset = 0;
     while (reader.remaining > 0) {
@@ -465,7 +467,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
           primaryKeyColumnEntry[1].typeBuilder.algebraicType;
         rowId = AlgebraicType.intoMapKey(
           primaryKeyColType,
-          row[primaryKeyColName]
+          row[primaryKeyColName],
         );
       } else {
         // Get a view of the bytes for this row.
@@ -487,7 +489,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
 
   // Take a bunch of table updates and ensure that there is at most one update per table.
   #mergeTableUpdates(
-    updates: CacheTableUpdate<UntypedTableDef>[]
+    updates: CacheTableUpdate<UntypedTableDef>[],
   ): CacheTableUpdate<UntypedTableDef>[] {
     const merged = new Map<string, Operation[]>();
     for (const update of updates) {
@@ -506,7 +508,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
 
   #queryRowsToTableUpdates(
     rows: QueryRows,
-    opType: 'insert' | 'delete'
+    opType: "insert" | "delete",
   ): CacheTableUpdate<UntypedTableDef>[] {
     const updates: CacheTableUpdate<UntypedTableDef>[] = [];
     for (const tableRows of rows.tables) {
@@ -519,48 +521,48 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   }
 
   #queryRowsToTableResults(rows: QueryRows): OneOffQueryTableResult[] {
-    return rows.tables.map(tableRows => ({
+    return rows.tables.map((tableRows) => ({
       tableName: tableRows.table,
-      rows: this.#parseRowList('insert', tableRows.table, tableRows.rows).map(
-        op => op.row
+      rows: this.#parseRowList("insert", tableRows.table, tableRows.rows).map(
+        (op) => op.row,
       ),
     }));
   }
 
   #tableUpdateRowsToOperations(
     tableName: string,
-    rows: TableUpdateRows
+    rows: TableUpdateRows,
   ): Operation[] {
-    if (rows.tag === 'PersistentTable') {
+    if (rows.tag === "PersistentTable") {
       const inserts = this.#parseRowList(
-        'insert',
+        "insert",
         tableName,
-        rows.value.inserts
+        rows.value.inserts,
       );
       const deletes = this.#parseRowList(
-        'delete',
+        "delete",
         tableName,
-        rows.value.deletes
+        rows.value.deletes,
       );
       return inserts.concat(deletes);
     }
-    if (rows.tag === 'EventTable') {
+    if (rows.tag === "EventTable") {
       // Event table rows are insert-only. The table cache handles skipping
       // storage for event tables and only firing on_insert callbacks.
-      return this.#parseRowList('insert', tableName, rows.value.events);
+      return this.#parseRowList("insert", tableName, rows.value.events);
     }
     return [];
   }
 
   #querySetUpdateToTableUpdates(
-    querySetUpdate: QuerySetUpdate
+    querySetUpdate: QuerySetUpdate,
   ): CacheTableUpdate<UntypedTableDef>[] {
     const updates: CacheTableUpdate<UntypedTableDef>[] = [];
     for (const tableUpdate of querySetUpdate.tables) {
       let operations: Operation[] = [];
       for (const rows of tableUpdate.rows) {
         operations = operations.concat(
-          this.#tableUpdateRowsToOperations(tableUpdate.tableName, rows)
+          this.#tableUpdateRowsToOperations(tableUpdate.tableName, rows),
         );
       }
       updates.push({
@@ -589,14 +591,14 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       if (this.#outboundQueue.length) this.#flushOutboundQueue(this.ws);
 
       stdbLogger(
-        'trace',
-        () => `Sending message to server: ${stringify(message)}`
+        "trace",
+        () => `Sending message to server: ${stringify(message)}`,
       );
       this.ws.send(encoded);
     } else {
       stdbLogger(
-        'trace',
-        () => `Queuing message to server: ${stringify(message)}`
+        "trace",
+        () => `Queuing message to server: ${stringify(message)}`,
       );
       // use slice() to copy, in case the clientMessageEncoder's buffer gets used
       this.#outboundQueue.push(encoded.slice());
@@ -620,7 +622,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
 
   #applyTableUpdates(
     tableUpdates: CacheTableUpdate<UntypedTableDef>[],
-    eventContext: EventContextInterface<RemoteModule>
+    eventContext: EventContextInterface<RemoteModule>,
   ): PendingCallback[] {
     const pendingCallbacks: PendingCallback[] = [];
     for (const tableUpdate of tableUpdates) {
@@ -630,9 +632,9 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       const table = this.clientCache.getOrCreateTable(tableDef);
       const newCallbacks = table.applyOperations(
         tableUpdate.operations as Operation<
-          RowType<Values<RemoteModule['tables']>>
+          RowType<Values<RemoteModule["tables"]>>
         >[],
-        eventContext
+        eventContext,
       );
       for (const callback of newCallbacks) {
         pendingCallbacks.push(callback);
@@ -643,7 +645,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
 
   #applyTransactionUpdates(
     eventContext: EventContextInterface<RemoteModule>,
-    tu: TransactionUpdate
+    tu: TransactionUpdate,
   ): PendingCallback[] {
     const allUpdates: CacheTableUpdate<UntypedTableDef>[] = [];
     for (const querySetUpdate of tu.querySets) {
@@ -655,97 +657,97 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     }
     return this.#applyTableUpdates(
       this.#mergeTableUpdates(allUpdates),
-      eventContext
+      eventContext,
     );
   }
 
   async #processMessage(data: Uint8Array): Promise<void> {
     const serverMessage = ServerMessage.deserialize(new BinaryReader(data));
     stdbLogger(
-      'trace',
-      () => `Processing server message: ${stringify(serverMessage)}`
+      "trace",
+      () => `Processing server message: ${stringify(serverMessage)}`,
     );
     switch (serverMessage.tag) {
-      case 'InitialConnection': {
+      case "InitialConnection": {
         this.identity = serverMessage.value.identity;
         if (!this.token && serverMessage.value.token) {
           this.token = serverMessage.value.token;
         }
         this.connectionId = serverMessage.value.connectionId;
-        this.#emitter.emit('connect', this, this.identity, this.token);
+        this.#emitter.emit("connect", this, this.identity, this.token);
         break;
       }
-      case 'SubscribeApplied': {
+      case "SubscribeApplied": {
         const querySetId = serverMessage.value.querySetId.id;
         const subscription =
           this.#subscriptionManager.subscriptions.get(querySetId);
         if (!subscription) {
           stdbLogger(
-            'error',
-            `Received SubscribeApplied for unknown querySetId ${querySetId}.`
+            "error",
+            `Received SubscribeApplied for unknown querySetId ${querySetId}.`,
           );
           return;
         }
         const event: Event<never> = {
           id: this.#nextEventId(),
-          tag: 'SubscribeApplied',
+          tag: "SubscribeApplied",
         };
         const eventContext = this.#makeEventContext(event);
         const tableUpdates = this.#queryRowsToTableUpdates(
           serverMessage.value.rows,
-          'insert'
+          "insert",
         );
         const callbacks = this.#applyTableUpdates(tableUpdates, eventContext);
         const { event: _, ...subscriptionEventContext } = eventContext;
-        subscription.emitter.emit('applied', subscriptionEventContext);
+        subscription.emitter.emit("applied", subscriptionEventContext);
         stdbLogger(
-          'trace',
-          () => `Calling ${callbacks.length} triggered row callbacks`
+          "trace",
+          () => `Calling ${callbacks.length} triggered row callbacks`,
         );
         for (const callback of callbacks) {
           callback.cb();
         }
         break;
       }
-      case 'UnsubscribeApplied': {
+      case "UnsubscribeApplied": {
         const querySetId = serverMessage.value.querySetId.id;
         const subscription =
           this.#subscriptionManager.subscriptions.get(querySetId);
         if (!subscription) {
           stdbLogger(
-            'error',
-            `Received UnsubscribeApplied for unknown querySetId ${querySetId}.`
+            "error",
+            `Received UnsubscribeApplied for unknown querySetId ${querySetId}.`,
           );
           return;
         }
         const event: Event<never> = {
           id: this.#nextEventId(),
-          tag: 'UnsubscribeApplied',
+          tag: "UnsubscribeApplied",
         };
         const eventContext = this.#makeEventContext(event);
         const tableUpdates = serverMessage.value.rows
-          ? this.#queryRowsToTableUpdates(serverMessage.value.rows, 'delete')
+          ? this.#queryRowsToTableUpdates(serverMessage.value.rows, "delete")
           : [];
         const callbacks = this.#applyTableUpdates(tableUpdates, eventContext);
         const { event: _, ...subscriptionEventContext } = eventContext;
-        subscription.emitter.emit('end', subscriptionEventContext);
+        subscription.emitter.emit("end", subscriptionEventContext);
         this.#subscriptionManager.subscriptions.delete(querySetId);
         stdbLogger(
-          'trace',
-          () => `Calling ${callbacks.length} triggered row callbacks`
+          "trace",
+          () => `Calling ${callbacks.length} triggered row callbacks`,
         );
         for (const callback of callbacks) {
           callback.cb();
         }
         break;
       }
-      case 'SubscriptionError': {
+      case "SubscriptionError": {
         const querySetId = serverMessage.value.querySetId.id;
         const requestId = serverMessage.value.requestId;
         const error = Error(serverMessage.value.error);
         const event: Event<never> = {
           id: this.#nextEventId(),
-          tag: 'Error',
+          tag: "Error",
           value: error,
         };
         const eventContext = this.#makeEventContext(event);
@@ -759,8 +761,8 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
         // to kill the connection. Once we have per-query storage, this won't be fatal.
         if (requestId == null) {
           stdbLogger(
-            'error',
-            `Disconnecting due to error for a previously applied subscription: ${serverMessage.value.error}`
+            "error",
+            `Disconnecting due to error for a previously applied subscription: ${serverMessage.value.error}`,
           );
           this.disconnect();
           break;
@@ -769,46 +771,46 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
         const subscription =
           this.#subscriptionManager.subscriptions.get(querySetId);
         if (subscription) {
-          subscription.emitter.emit('error', errorContext, error);
+          subscription.emitter.emit("error", errorContext, error);
           this.#subscriptionManager.subscriptions.delete(querySetId);
         } else {
           stdbLogger(
-            'error',
+            "error",
             `Received SubscriptionError for unknown querySetId ${querySetId}:`,
-            error
+            error,
           );
         }
         break;
       }
-      case 'TransactionUpdate': {
+      case "TransactionUpdate": {
         const event: Event<never> = {
           id: this.#nextEventId(),
-          tag: 'Transaction',
+          tag: "Transaction",
         };
         const eventContext = this.#makeEventContext(event);
         const callbacks = this.#applyTransactionUpdates(
           eventContext,
-          serverMessage.value
+          serverMessage.value,
         );
         stdbLogger(
-          'trace',
-          () => `Calling ${callbacks.length} triggered row callbacks`
+          "trace",
+          () => `Calling ${callbacks.length} triggered row callbacks`,
         );
         for (const callback of callbacks) {
           callback.cb();
         }
         break;
       }
-      case 'ReducerResult': {
+      case "ReducerResult": {
         const { requestId, result } = serverMessage.value;
 
-        if (result.tag === 'Ok') {
+        if (result.tag === "Ok") {
           const reducerInfo = this.#reducerCallInfo.get(requestId);
           const eventId: string = this.#nextEventId();
           const event: Event<any> = reducerInfo
             ? {
                 id: eventId,
-                tag: 'Reducer',
+                tag: "Reducer",
                 value: {
                   timestamp: serverMessage.value.timestamp,
                   outcome: result,
@@ -820,17 +822,17 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
               }
             : {
                 id: eventId,
-                tag: 'Transaction',
+                tag: "Transaction",
               };
           const eventContext = this.#makeEventContext(event as any);
 
           const callbacks = this.#applyTransactionUpdates(
             eventContext,
-            result.value.transactionUpdate
+            result.value.transactionUpdate,
           );
           stdbLogger(
-            'trace',
-            () => `Calling ${callbacks.length} triggered row callbacks`
+            "trace",
+            () => `Calling ${callbacks.length} triggered row callbacks`,
           );
           for (const callback of callbacks) {
             callback.cb();
@@ -842,25 +844,25 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
         cb?.(result);
         break;
       }
-      case 'ProcedureResult': {
+      case "ProcedureResult": {
         const { status, requestId } = serverMessage.value;
-        const result: ProcedureResultMessage['result'] =
-          status.tag === 'Returned'
-            ? { tag: 'Ok', value: status.value }
-            : { tag: 'Err', value: status.value };
+        const result: ProcedureResultMessage["result"] =
+          status.tag === "Returned"
+            ? { tag: "Ok", value: status.value }
+            : { tag: "Err", value: status.value };
         const cb = this.#procedureCallbacks.get(requestId);
         this.#procedureCallbacks.delete(requestId);
         cb?.(result);
         break;
       }
-      case 'OneOffQueryResult': {
+      case "OneOffQueryResult": {
         const { requestId, result } = serverMessage.value;
         const cb = this.#oneOffQueryCallbacks.get(requestId);
         this.#oneOffQueryCallbacks.delete(requestId);
         if (!cb) {
           stdbLogger(
-            'warn',
-            `Received OneOffQueryResult for unknown requestId ${requestId}.`
+            "warn",
+            `Received OneOffQueryResult for unknown requestId ${requestId}.`,
           );
           break;
         }
@@ -893,7 +895,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
   callReducer(
     reducerName: string,
     argsBuffer: Uint8Array,
-    reducerArgs?: object
+    reducerArgs?: object,
   ): Promise<void> {
     const { promise, resolve, reject } = Promise.withResolvers<void>();
     const requestId = this.#getNextRequestId();
@@ -910,20 +912,20 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
         args: reducerArgs,
       });
     }
-    this.#reducerCallbacks.set(requestId, result => {
-      if (result.tag === 'Ok' || result.tag === 'OkEmpty') {
+    this.#reducerCallbacks.set(requestId, (result) => {
+      if (result.tag === "Ok" || result.tag === "OkEmpty") {
         resolve();
       } else {
-        if (result.tag === 'Err') {
+        if (result.tag === "Err") {
           /// Interpret the user-returned error as a string.
           const reader = new BinaryReader(result.value);
           const errorString = reader.readString();
           reject(new SenderError(errorString));
-        } else if (result.tag === 'InternalError') {
+        } else if (result.tag === "InternalError") {
           reject(new InternalError(result.value));
         } else {
           const unreachable: never = result;
-          reject(new Error('Unexpected reducer result'));
+          reject(new Error("Unexpected reducer result"));
           void unreachable;
         }
       }
@@ -941,7 +943,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     reducerName: string,
     // TODO: remove
     _paramsType: ProductType,
-    params: object
+    params: object,
   ): Promise<void> {
     const writer = new BinaryWriter(1024);
     this.#reducerArgsSerializers[reducerName].serialize(writer, params);
@@ -957,7 +959,7 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
    */
   callProcedure(
     procedureName: string,
-    argsBuffer: Uint8Array
+    argsBuffer: Uint8Array,
   ): Promise<Uint8Array> {
     const { promise, resolve, reject } = Promise.withResolvers<Uint8Array>();
     const requestId = this.#getNextRequestId();
@@ -969,8 +971,8 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       flags: 0,
     });
     this.#sendMessage(message);
-    this.#procedureCallbacks.set(requestId, result => {
-      if (result.tag === 'Ok') {
+    this.#procedureCallbacks.set(requestId, (result) => {
+      if (result.tag === "Ok") {
         resolve(result.value);
       } else {
         reject(result.value);
@@ -991,14 +993,14 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
     _paramsType: ProductType,
     params: object,
     // TODO: remove
-    _returnType: AlgebraicType
+    _returnType: AlgebraicType,
   ): Promise<any> {
     const writer = new BinaryWriter(1024);
     const { serializeArgs, deserializeReturn } =
       this.#procedureSerializers[procedureName];
     serializeArgs(writer, params);
     const argsBuffer = writer.getBuffer();
-    return this.callProcedure(procedureName, argsBuffer).then(returnBuf => {
+    return this.callProcedure(procedureName, argsBuffer).then((returnBuf) => {
       return deserializeReturn(new BinaryReader(returnBuf));
     });
   }
@@ -1018,8 +1020,8 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
       queryString: sql,
     });
 
-    this.#oneOffQueryCallbacks.set(requestId, result => {
-      if ('ok' in result) {
+    this.#oneOffQueryCallbacks.set(requestId, (result) => {
+      if ("ok" in result) {
         resolve(this.#queryRowsToTableResults(result.ok));
       } else {
         reject(new Error(result.err));
@@ -1041,56 +1043,56 @@ export class DbConnectionImpl<RemoteModule extends UntypedRemoteModule>
    * ```
    */
   disconnect(): void {
-    this.wsPromise.then(ws => ws?.close());
+    this.wsPromise.then((ws) => ws?.close());
   }
 
   private on(
     eventName: ConnectionEvent,
-    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void
+    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
     this.#emitter.on(eventName, callback);
   }
 
   private off(
     eventName: ConnectionEvent,
-    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void
+    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
     this.#emitter.off(eventName, callback);
   }
 
   private onConnect(
-    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void
+    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
-    this.#emitter.on('connect', callback);
+    this.#emitter.on("connect", callback);
   }
 
   private onDisconnect(
-    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void
+    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
-    this.#emitter.on('disconnect', callback);
+    this.#emitter.on("disconnect", callback);
   }
 
   private onConnectError(
-    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void
+    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
-    this.#emitter.on('connectError', callback);
+    this.#emitter.on("connectError", callback);
   }
 
   removeOnConnect(
-    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void
+    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
-    this.#emitter.off('connect', callback);
+    this.#emitter.off("connect", callback);
   }
 
   removeOnDisconnect(
-    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void
+    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
-    this.#emitter.off('disconnect', callback);
+    this.#emitter.off("disconnect", callback);
   }
 
   removeOnConnectError(
-    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void
+    callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
-    this.#emitter.off('connectError', callback);
+    this.#emitter.off("connectError", callback);
   }
 }

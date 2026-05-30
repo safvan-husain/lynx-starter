@@ -27,7 +27,10 @@ export class Timestamp {
 
   constructor(micros: string | number) {
     if (typeof micros === 'number') {
-      this.__timestamp_micros_since_unix_epoch__ = micros.toString(16).padStart(16, '0');
+      this.__timestamp_micros_since_unix_epoch__ =
+        micros < 0
+          ? micros.toString(16)
+          : micros.toString(16).padStart(16, '0');
     } else {
       this.__timestamp_micros_since_unix_epoch__ = micros.startsWith('0x') ? micros.slice(2) : micros;
     }

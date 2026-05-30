@@ -1,10 +1,11 @@
-import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest';
-import { ConnectionId } from '../src';
-import { Identity } from '../src/lib/identity';
+import { describe, test, expect, beforeEach, vi, afterEach } from "vitest";
+import { ConnectionId } from "../src";
+import { Identity } from "../src/lib/identity";
+import { ConnectionManager as RealConnectionManager } from "../src/sdk/connection_manager";
 
 // Test identity helper
 const testIdentity = Identity.fromString(
-  '0000000000000000000000000000000000000000000000000000000000000069'
+  "0000000000000000000000000000000000000000000000000000000000000069",
 );
 
 // We need to test a fresh instance each time, so we import the class directly
@@ -71,13 +72,13 @@ class MockConnection {
   }
 
   removeOnDisconnect(
-    cb: (ctx: ErrorContextInterface, error?: Error) => void
+    cb: (ctx: ErrorContextInterface, error?: Error) => void,
   ): void {
     this.#onDisconnectCallbacks.delete(cb);
   }
 
   removeOnConnectError(
-    cb: (ctx: ErrorContextInterface, error: Error) => void
+    cb: (ctx: ErrorContextInterface, error: Error) => void,
   ): void {
     this.#onConnectErrorCallbacks.delete(cb);
   }
@@ -111,13 +112,13 @@ class MockConnection {
   }
 
   registerOnDisconnect(
-    cb: (ctx: ErrorContextInterface, error?: Error) => void
+    cb: (ctx: ErrorContextInterface, error?: Error) => void,
   ): void {
     this.#onDisconnectCallbacks.add(cb);
   }
 
   registerOnConnectError(
-    cb: (ctx: ErrorContextInterface, error: Error) => void
+    cb: (ctx: ErrorContextInterface, error: Error) => void,
   ): void {
     this.#onConnectErrorCallbacks.add(cb);
   }
@@ -144,14 +145,14 @@ class MockBuilder {
   }
 
   onDisconnect(
-    cb: (ctx: ErrorContextInterface, error?: Error) => void
+    cb: (ctx: ErrorContextInterface, error?: Error) => void,
   ): MockBuilder {
     this.#connection.registerOnDisconnect(cb);
     return this;
   }
 
   onConnectError(
-    cb: (ctx: ErrorContextInterface, error: Error) => void
+    cb: (ctx: ErrorContextInterface, error: Error) => void,
   ): MockBuilder {
     this.#connection.registerOnConnectError(cb);
     return this;
@@ -219,7 +220,7 @@ class ConnectionManagerImpl {
       connectionError: undefined,
     });
 
-    managed.onConnect = conn => {
+    managed.onConnect = (conn) => {
       updateState({
         isActive: conn.isActive,
         identity: conn.identity,
@@ -323,7 +324,7 @@ class ConnectionManagerImpl {
   }
 }
 
-describe('ConnectionManager', () => {
+describe("ConnectionManager", () => {
   let manager: ConnectionManagerImpl;
 
   beforeEach(() => {
@@ -335,40 +336,40 @@ describe('ConnectionManager', () => {
     vi.useRealTimers();
   });
 
-  describe('getKey', () => {
-    test('generates consistent keys from uri and moduleName', () => {
-      const key1 = manager.getKey('ws://localhost:3000', 'myModule');
-      const key2 = manager.getKey('ws://localhost:3000', 'myModule');
+  describe("getKey", () => {
+    test("generates consistent keys from uri and moduleName", () => {
+      const key1 = manager.getKey("ws://localhost:3000", "myModule");
+      const key2 = manager.getKey("ws://localhost:3000", "myModule");
       expect(key1).toBe(key2);
-      expect(key1).toBe('ws://localhost:3000::myModule');
+      expect(key1).toBe("ws://localhost:3000::myModule");
     });
 
-    test('generates different keys for different uris', () => {
-      const key1 = manager.getKey('ws://localhost:3000', 'myModule');
-      const key2 = manager.getKey('ws://localhost:4000', 'myModule');
+    test("generates different keys for different uris", () => {
+      const key1 = manager.getKey("ws://localhost:3000", "myModule");
+      const key2 = manager.getKey("ws://localhost:4000", "myModule");
       expect(key1).not.toBe(key2);
     });
 
-    test('generates different keys for different modules', () => {
-      const key1 = manager.getKey('ws://localhost:3000', 'moduleA');
-      const key2 = manager.getKey('ws://localhost:3000', 'moduleB');
+    test("generates different keys for different modules", () => {
+      const key1 = manager.getKey("ws://localhost:3000", "moduleA");
+      const key2 = manager.getKey("ws://localhost:3000", "moduleB");
       expect(key1).not.toBe(key2);
     });
 
-    test('static getKey matches instance method', () => {
-      const uri = 'ws://localhost:3000';
-      const moduleName = 'myModule';
+    test("static getKey matches instance method", () => {
+      const uri = "ws://localhost:3000";
+      const moduleName = "myModule";
       expect(ConnectionManagerImpl.getKey(uri, moduleName)).toBe(
-        manager.getKey(uri, moduleName)
+        manager.getKey(uri, moduleName),
       );
     });
   });
 
-  describe('retain', () => {
-    test('creates connection on first retain', () => {
+  describe("retain", () => {
+    test("creates connection on first retain", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       const connection = manager.retain(key, builder);
 
@@ -376,10 +377,10 @@ describe('ConnectionManager', () => {
       expect(manager._getRefCount(key)).toBe(1);
     });
 
-    test('returns same connection on subsequent retains', () => {
+    test("returns same connection on subsequent retains", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       const connection1 = manager.retain(key, builder);
       const connection2 = manager.retain(key, builder);
@@ -388,10 +389,10 @@ describe('ConnectionManager', () => {
       expect(manager._getRefCount(key)).toBe(2);
     });
 
-    test('increments refCount on each retain', () => {
+    test("increments refCount on each retain", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       expect(manager._getRefCount(key)).toBe(1);
@@ -403,10 +404,10 @@ describe('ConnectionManager', () => {
       expect(manager._getRefCount(key)).toBe(3);
     });
 
-    test('cancels pending release when retaining again', () => {
+    test("cancels pending release when retaining again", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       manager.release(key);
@@ -421,11 +422,11 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('release', () => {
-    test('decrements refCount on release', () => {
+  describe("release", () => {
+    test("decrements refCount on release", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       manager.retain(key, builder);
@@ -435,10 +436,10 @@ describe('ConnectionManager', () => {
       expect(manager._getRefCount(key)).toBe(1);
     });
 
-    test('schedules cleanup when refCount reaches zero', () => {
+    test("schedules cleanup when refCount reaches zero", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       manager.release(key);
@@ -447,10 +448,10 @@ describe('ConnectionManager', () => {
       expect(mockConnection.disconnected).toBe(false);
     });
 
-    test('disconnects after timeout when refCount is zero', () => {
+    test("disconnects after timeout when refCount is zero", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       manager.release(key);
@@ -461,10 +462,10 @@ describe('ConnectionManager', () => {
       expect(manager._hasConnection(key)).toBe(false);
     });
 
-    test('does not disconnect if re-retained before timeout', () => {
+    test("does not disconnect if re-retained before timeout", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       manager.release(key);
@@ -476,14 +477,14 @@ describe('ConnectionManager', () => {
       expect(manager._hasConnection(key)).toBe(true);
     });
 
-    test('does nothing when releasing unknown key', () => {
-      expect(() => manager.release('unknown-key')).not.toThrow();
+    test("does nothing when releasing unknown key", () => {
+      expect(() => manager.release("unknown-key")).not.toThrow();
     });
 
-    test('does not schedule multiple cleanups', () => {
+    test("does not schedule multiple cleanups", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       manager.retain(key, builder);
@@ -499,11 +500,11 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('React StrictMode simulation', () => {
-    test('survives mount → unmount → remount cycle', () => {
+  describe("React StrictMode simulation", () => {
+    test("survives mount → unmount → remount cycle", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       // Mount: retain
       manager.retain(key, builder);
@@ -527,10 +528,10 @@ describe('ConnectionManager', () => {
       expect(manager.getConnection(key)).toBe(mockConnection);
     });
 
-    test('maintains single connection across multiple StrictMode cycles', () => {
+    test("maintains single connection across multiple StrictMode cycles", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       // First cycle
       manager.retain(key, builder);
@@ -549,20 +550,20 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('subscribe', () => {
-    test('adds listener and returns unsubscribe function', () => {
-      const key = 'test-key';
+  describe("subscribe", () => {
+    test("adds listener and returns unsubscribe function", () => {
+      const key = "test-key";
       const listener = vi.fn();
 
       const unsubscribe = manager.subscribe(key, listener);
 
-      expect(typeof unsubscribe).toBe('function');
+      expect(typeof unsubscribe).toBe("function");
     });
 
-    test('notifies listeners on state change', () => {
+    test("notifies listeners on state change", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
       const listener = vi.fn();
 
       manager.subscribe(key, listener);
@@ -572,10 +573,10 @@ describe('ConnectionManager', () => {
       expect(listener).toHaveBeenCalled();
     });
 
-    test('notifies listeners when connection state changes', () => {
+    test("notifies listeners when connection state changes", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
       const listener = vi.fn();
 
       manager.subscribe(key, listener);
@@ -583,15 +584,15 @@ describe('ConnectionManager', () => {
       listener.mockClear();
 
       const identity = testIdentity;
-      mockConnection.simulateConnect(identity, 'test-token');
+      mockConnection.simulateConnect(identity, "test-token");
 
       expect(listener).toHaveBeenCalled();
     });
 
-    test('stops notifying after unsubscribe', () => {
+    test("stops notifying after unsubscribe", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
       const listener = vi.fn();
 
       const unsubscribe = manager.subscribe(key, listener);
@@ -601,13 +602,13 @@ describe('ConnectionManager', () => {
       unsubscribe();
 
       const identity = testIdentity;
-      mockConnection.simulateConnect(identity, 'test-token');
+      mockConnection.simulateConnect(identity, "test-token");
 
       expect(listener).not.toHaveBeenCalled();
     });
 
-    test('cleans up entry when no listeners and no connection', () => {
-      const key = 'test-key';
+    test("cleans up entry when no listeners and no connection", () => {
+      const key = "test-key";
       const listener = vi.fn();
 
       const unsubscribe = manager.subscribe(key, listener);
@@ -619,10 +620,10 @@ describe('ConnectionManager', () => {
       expect(manager.getSnapshot(key)).toBeUndefined();
     });
 
-    test('does not clean up entry when connection exists', () => {
+    test("does not clean up entry when connection exists", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
       const listener = vi.fn();
 
       const unsubscribe = manager.subscribe(key, listener);
@@ -634,15 +635,15 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('getSnapshot', () => {
-    test('returns undefined for unknown key', () => {
-      expect(manager.getSnapshot('unknown-key')).toBeUndefined();
+  describe("getSnapshot", () => {
+    test("returns undefined for unknown key", () => {
+      expect(manager.getSnapshot("unknown-key")).toBeUndefined();
     });
 
-    test('returns state after retain', () => {
+    test("returns state after retain", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       const snapshot = manager.getSnapshot(key);
@@ -651,43 +652,43 @@ describe('ConnectionManager', () => {
       expect(snapshot?.isActive).toBe(false);
     });
 
-    test('reflects connection state changes', () => {
+    test("reflects connection state changes", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
 
       const identity = testIdentity;
-      mockConnection.simulateConnect(identity, 'test-token');
+      mockConnection.simulateConnect(identity, "test-token");
 
       const snapshot = manager.getSnapshot(key);
       expect(snapshot?.isActive).toBe(true);
       expect(snapshot?.identity).toBe(identity);
-      expect(snapshot?.token).toBe('test-token');
+      expect(snapshot?.token).toBe("test-token");
     });
 
-    test('reflects disconnect state', () => {
+    test("reflects disconnect state", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       const identity = testIdentity;
-      mockConnection.simulateConnect(identity, 'test-token');
+      mockConnection.simulateConnect(identity, "test-token");
       mockConnection.simulateDisconnect();
 
       const snapshot = manager.getSnapshot(key);
       expect(snapshot?.isActive).toBe(false);
     });
 
-    test('reflects connection error', () => {
+    test("reflects connection error", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
-      const error = new Error('Connection failed');
+      const error = new Error("Connection failed");
       mockConnection.simulateConnectError(error);
 
       const snapshot = manager.getSnapshot(key);
@@ -696,25 +697,25 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('getConnection', () => {
-    test('returns null for unknown key', () => {
-      expect(manager.getConnection('unknown-key')).toBeNull();
+  describe("getConnection", () => {
+    test("returns null for unknown key", () => {
+      expect(manager.getConnection("unknown-key")).toBeNull();
     });
 
-    test('returns connection after retain', () => {
+    test("returns connection after retain", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
 
       expect(manager.getConnection(key)).toBe(mockConnection);
     });
 
-    test('returns null after cleanup', () => {
+    test("returns null after cleanup", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       manager.release(key);
@@ -724,14 +725,14 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('multiple connections', () => {
-    test('manages multiple independent connections', () => {
+  describe("multiple connections", () => {
+    test("manages multiple independent connections", () => {
       const connection1 = new MockConnection();
       const connection2 = new MockConnection();
       const builder1 = new MockBuilder(connection1);
       const builder2 = new MockBuilder(connection2);
-      const key1 = 'connection-1';
-      const key2 = 'connection-2';
+      const key1 = "connection-1";
+      const key2 = "connection-2";
 
       manager.retain(key1, builder1);
       manager.retain(key2, builder2);
@@ -742,13 +743,13 @@ describe('ConnectionManager', () => {
       expect(manager._getRefCount(key2)).toBe(1);
     });
 
-    test('releases connections independently', () => {
+    test("releases connections independently", () => {
       const connection1 = new MockConnection();
       const connection2 = new MockConnection();
       const builder1 = new MockBuilder(connection1);
       const builder2 = new MockBuilder(connection2);
-      const key1 = 'connection-1';
-      const key2 = 'connection-2';
+      const key1 = "connection-1";
+      const key2 = "connection-2";
 
       manager.retain(key1, builder1);
       manager.retain(key2, builder2);
@@ -762,11 +763,11 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('callback cleanup', () => {
-    test('removes callbacks on disconnect', () => {
+  describe("callback cleanup", () => {
+    test("removes callbacks on disconnect", () => {
       const mockConnection = new MockConnection();
       const builder = new MockBuilder(mockConnection);
-      const key = 'test-key';
+      const key = "test-key";
 
       manager.retain(key, builder);
       manager.release(key);
@@ -776,8 +777,181 @@ describe('ConnectionManager', () => {
       // (callbacks were removed)
       const identity = testIdentity;
       expect(() => {
-        mockConnection.simulateConnect(identity, 'test-token');
+        mockConnection.simulateConnect(identity, "test-token");
       }).not.toThrow();
     });
+  });
+});
+
+describe("ConnectionManager reconnect continuity", () => {
+  class ReconnectingMockConnection {
+    isActive = false;
+    identity?: Identity;
+    token?: string;
+    connectionId = ConnectionId.random();
+    disconnected = false;
+
+    #onConnectCallbacks = new Set<(conn: ReconnectingMockConnection) => void>();
+    #onDisconnectCallbacks = new Set<
+      (ctx: ReconnectingMockConnection, error?: Error) => void
+    >();
+    #onConnectErrorCallbacks = new Set<
+      (ctx: ReconnectingMockConnection, error: Error) => void
+    >();
+
+    disconnect(): void {
+      this.disconnected = true;
+      this.isActive = false;
+    }
+
+    removeOnConnect(cb: (conn: ReconnectingMockConnection) => void): void {
+      this.#onConnectCallbacks.delete(cb);
+    }
+
+    removeOnDisconnect(
+      cb: (ctx: ReconnectingMockConnection, error?: Error) => void,
+    ): void {
+      this.#onDisconnectCallbacks.delete(cb);
+    }
+
+    removeOnConnectError(
+      cb: (ctx: ReconnectingMockConnection, error: Error) => void,
+    ): void {
+      this.#onConnectErrorCallbacks.delete(cb);
+    }
+
+    simulateConnect(identity: Identity, token: string): void {
+      this.isActive = true;
+      this.identity = identity;
+      this.token = token;
+      for (const cb of this.#onConnectCallbacks) {
+        cb(this);
+      }
+    }
+
+    simulateDisconnect(error?: Error): void {
+      this.isActive = false;
+      for (const cb of this.#onDisconnectCallbacks) {
+        cb(this, error);
+      }
+    }
+
+    registerOnConnect(cb: (conn: ReconnectingMockConnection) => void): void {
+      this.#onConnectCallbacks.add(cb);
+    }
+
+    registerOnDisconnect(
+      cb: (ctx: ReconnectingMockConnection, error?: Error) => void,
+    ): void {
+      this.#onDisconnectCallbacks.add(cb);
+    }
+
+    registerOnConnectError(
+      cb: (ctx: ReconnectingMockConnection, error: Error) => void,
+    ): void {
+      this.#onConnectErrorCallbacks.add(cb);
+    }
+  }
+
+  class ReconnectingMockBuilder {
+    connections: ReconnectingMockConnection[] = [];
+    tokens: (string | undefined)[] = [];
+    #token?: string;
+
+    withToken(token?: string): this {
+      this.#token = token;
+      this.tokens.push(token);
+      return this;
+    }
+
+    build(): ReconnectingMockConnection {
+      const connection = new ReconnectingMockConnection();
+      connection.token = this.#token;
+      this.connections.push(connection);
+      return connection;
+    }
+
+    onConnect(cb: (conn: ReconnectingMockConnection) => void): this {
+      for (const connection of this.connections) {
+        connection.registerOnConnect(cb);
+      }
+      const originalBuild = this.build.bind(this);
+      this.build = () => {
+        const connection = originalBuild();
+        connection.registerOnConnect(cb);
+        return connection;
+      };
+      return this;
+    }
+
+    onDisconnect(
+      cb: (ctx: ReconnectingMockConnection, error?: Error) => void,
+    ): this {
+      for (const connection of this.connections) {
+        connection.registerOnDisconnect(cb);
+      }
+      const originalBuild = this.build.bind(this);
+      this.build = () => {
+        const connection = originalBuild();
+        connection.registerOnDisconnect(cb);
+        return connection;
+      };
+      return this;
+    }
+
+    onConnectError(
+      cb: (ctx: ReconnectingMockConnection, error: Error) => void,
+    ): this {
+      for (const connection of this.connections) {
+        connection.registerOnConnectError(cb);
+      }
+      const originalBuild = this.build.bind(this);
+      this.build = () => {
+        const connection = originalBuild();
+        connection.registerOnConnectError(cb);
+        return connection;
+      };
+      return this;
+    }
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
+
+  test("reconnects with the latest token after an active connection drops", () => {
+    const key = `real-reconnect-${Date.now()}`;
+    const builder = new ReconnectingMockBuilder();
+
+    const firstConnection = RealConnectionManager.retain(
+      key,
+      builder as any,
+    ) as unknown as ReconnectingMockConnection;
+    firstConnection.simulateConnect(testIdentity, "saved-token");
+
+    firstConnection.simulateDisconnect(new Error("socket dropped"));
+
+    expect(RealConnectionManager.getConnection(key)).toBeNull();
+    expect(RealConnectionManager.getSnapshot(key)?.isActive).toBe(false);
+
+    vi.advanceTimersByTime(250);
+
+    const secondConnection = RealConnectionManager.getConnection(
+      key,
+    ) as unknown as ReconnectingMockConnection;
+    expect(secondConnection).toBeDefined();
+    expect(secondConnection).not.toBe(firstConnection);
+    expect(secondConnection.token).toBe("saved-token");
+
+    secondConnection.simulateConnect(testIdentity, "saved-token");
+    expect(RealConnectionManager.getSnapshot(key)?.isActive).toBe(true);
+
+    RealConnectionManager.release(key);
+    vi.runOnlyPendingTimers();
   });
 });

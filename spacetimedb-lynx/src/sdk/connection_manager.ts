@@ -31,9 +31,9 @@ import type {
   DbConnectionBuilder,
   DbConnectionImpl,
   ErrorContextInterface,
-} from './db_connection_impl';
-import type { Identity } from '../lib/identity';
-import { ConnectionId } from '../lib/connection_id';
+} from "./db_connection_impl";
+import type { Identity } from "../lib/identity";
+import { ConnectionId } from "../lib/connection_id";
 
 /** Represents the current state of a managed connection. */
 export type ConnectionState = {
@@ -47,15 +47,21 @@ export type ConnectionState = {
 type Listener = () => void;
 
 type ManagedConnection = {
+  builder?: DbConnectionBuilder<any>;
   connection?: DbConnectionImpl<any>;
   refCount: number;
   state: ConnectionState;
   listeners: Set<Listener>;
   pendingRelease: ReturnType<typeof setTimeout> | null;
+  pendingReconnect: ReturnType<typeof setTimeout> | null;
+  reconnectAttempt: number;
   onConnect?: (conn: DbConnectionImpl<any>) => void;
   onDisconnect?: (ctx: ErrorContextInterface<any>, error?: Error) => void;
   onConnectError?: (ctx: ErrorContextInterface<any>, error: Error) => void;
 };
+
+const RECONNECT_BASE_DELAY_MS = 250;
+const RECONNECT_MAX_DELAY_MS = 2000;
 
 function defaultState(): ConnectionState {
   return {
@@ -90,11 +96,14 @@ class ConnectionManagerImpl {
       return existing;
     }
     const managed: ManagedConnection = {
+      builder: undefined,
       connection: undefined,
       refCount: 0,
       state: defaultState(),
       listeners: new Set(),
       pendingRelease: null,
+      pendingReconnect: null,
+      reconnectAttempt: 0,
     };
     this.#connections.set(key, managed);
     return managed;
@@ -104,6 +113,85 @@ class ConnectionManagerImpl {
     for (const listener of managed.listeners) {
       listener();
     }
+  }
+
+  #updateState(
+    managed: ManagedConnection,
+    updates: Partial<ConnectionState>,
+  ): void {
+    managed.state = { ...managed.state, ...updates };
+    this.#notify(managed);
+  }
+
+  #reconnectDelay(attempt: number): number {
+    return Math.min(
+      RECONNECT_BASE_DELAY_MS * 2 ** Math.max(0, attempt - 1),
+      RECONNECT_MAX_DELAY_MS,
+    );
+  }
+
+  #buildConnection<T extends DbConnectionImpl<any>>(
+    managed: ManagedConnection,
+    builder: DbConnectionBuilder<T>,
+  ): T {
+    const token = managed.state.token;
+    if (token) {
+      builder.withToken(token);
+    }
+
+    const connection = builder.build();
+    managed.builder = builder;
+    managed.connection = connection;
+
+    this.#updateState(managed, {
+      isActive: connection.isActive,
+      identity: connection.identity ?? managed.state.identity,
+      token: connection.token ?? managed.state.token,
+      connectionId: connection.connectionId,
+      connectionError: undefined,
+    });
+
+    return connection;
+  }
+
+  #scheduleReconnect(
+    key: string,
+    managed: ManagedConnection,
+    error?: Error,
+  ): void {
+    if (
+      managed.refCount <= 0 ||
+      managed.pendingRelease ||
+      managed.pendingReconnect ||
+      !managed.builder
+    ) {
+      return;
+    }
+
+    managed.connection = undefined;
+    this.#updateState(managed, {
+      isActive: false,
+      connectionError: error ?? managed.state.connectionError,
+    });
+
+    const nextAttempt = managed.reconnectAttempt + 1;
+    managed.reconnectAttempt = nextAttempt;
+    managed.pendingReconnect = setTimeout(() => {
+      managed.pendingReconnect = null;
+      if (managed.refCount <= 0 || managed.pendingRelease) {
+        return;
+      }
+
+      try {
+        this.#buildConnection(managed, managed.builder!);
+      } catch (nextError) {
+        this.#scheduleReconnect(
+          key,
+          managed,
+          nextError instanceof Error ? nextError : new Error(String(nextError)),
+        );
+      }
+    }, this.#reconnectDelay(nextAttempt));
   }
 
   /**
@@ -117,63 +205,65 @@ class ConnectionManagerImpl {
    */
   retain<T extends DbConnectionImpl<any>>(
     key: string,
-    builder: DbConnectionBuilder<T>
+    builder: DbConnectionBuilder<T>,
   ): T {
     const managed = this.#ensureEntry(key);
     if (managed.pendingRelease) {
       clearTimeout(managed.pendingRelease);
       managed.pendingRelease = null;
     }
+    if (managed.pendingReconnect) {
+      clearTimeout(managed.pendingReconnect);
+      managed.pendingReconnect = null;
+    }
     managed.refCount += 1;
     if (managed.connection) {
       return managed.connection as T;
     }
 
-    const connection = builder.build();
-    managed.connection = connection;
+    if (!managed.onConnect) {
+      managed.onConnect = (conn) => {
+        if (conn !== managed.connection) {
+          return;
+        }
+        managed.reconnectAttempt = 0;
+        this.#updateState(managed, {
+          isActive: conn.isActive,
+          identity: conn.identity,
+          token: conn.token,
+          connectionId: conn.connectionId,
+          connectionError: undefined,
+        });
+      };
 
-    const updateState = (updates: Partial<ConnectionState>) => {
-      managed.state = { ...managed.state, ...updates };
-      this.#notify(managed);
-    };
+      managed.onDisconnect = (ctx, error) => {
+        if (ctx !== managed.connection) {
+          return;
+        }
+        this.#updateState(managed, {
+          isActive: ctx.isActive,
+          connectionError: error ?? undefined,
+        });
+        this.#scheduleReconnect(key, managed, error);
+      };
 
-    updateState({
-      isActive: connection.isActive,
-      identity: connection.identity,
-      token: connection.token,
-      connectionId: connection.connectionId,
-      connectionError: undefined,
-    });
+      managed.onConnectError = (ctx, error) => {
+        if (ctx !== managed.connection) {
+          return;
+        }
+        this.#updateState(managed, {
+          isActive: ctx.isActive,
+          connectionError: error,
+        });
+        this.#scheduleReconnect(key, managed, error);
+      };
 
-    managed.onConnect = conn => {
-      updateState({
-        isActive: conn.isActive,
-        identity: conn.identity,
-        token: conn.token,
-        connectionId: conn.connectionId,
-        connectionError: undefined,
-      });
-    };
+      builder.onConnect(managed.onConnect);
+      builder.onDisconnect(managed.onDisconnect);
+      builder.onConnectError(managed.onConnectError);
+    }
 
-    managed.onDisconnect = (ctx, error) => {
-      updateState({
-        isActive: ctx.isActive,
-        connectionError: error ?? undefined,
-      });
-    };
-
-    managed.onConnectError = (ctx, error) => {
-      updateState({
-        isActive: ctx.isActive,
-        connectionError: error,
-      });
-    };
-
-    builder.onConnect(managed.onConnect);
-    builder.onDisconnect(managed.onDisconnect);
-    builder.onConnectError(managed.onConnectError);
-
-    return connection as T;
+    return this.#buildConnection(managed, builder) as T;
   }
 
   release(key: string): void {
@@ -192,6 +282,10 @@ class ConnectionManagerImpl {
       if (managed.refCount > 0) {
         return;
       }
+      if (managed.pendingReconnect) {
+        clearTimeout(managed.pendingReconnect);
+        managed.pendingReconnect = null;
+      }
       if (managed.connection) {
         if (managed.onConnect) {
           managed.connection.removeOnConnect(managed.onConnect as any);
@@ -201,7 +295,7 @@ class ConnectionManagerImpl {
         }
         if (managed.onConnectError) {
           managed.connection.removeOnConnectError(
-            managed.onConnectError as any
+            managed.onConnectError as any,
           );
         }
         managed.connection.disconnect();

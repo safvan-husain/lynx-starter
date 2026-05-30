@@ -6,7 +6,7 @@ describe('Uuid', () => {
   test('toString UUid', () => {
     const uuids = [
       Uuid.NIL,
-      new Uuid(0x0102_0304_0506_0708_090a_0b0c_0d0e_0f10n),
+      new Uuid('0102030405060708090a0b0c0d0e0f10'),
       Uuid.MAX,
     ];
 
@@ -14,8 +14,7 @@ describe('Uuid', () => {
       const s = uuid.toString();
       const uuid2 = Uuid.parse(s);
       expect(s).toBe(uuid2.toString());
-      // Bigint structural equality
-      expect(uuid.asBigInt()).toBe(uuid2.asBigInt());
+      expect(uuid.__uuid__).toBe(uuid2.__uuid__);
     }
   });
 
@@ -42,7 +41,7 @@ describe('Uuid', () => {
     const counter = { value: Number(0) };
     u = Uuid.fromCounterV7(
       counter,
-      new Timestamp(1_686_000_000_000n),
+      new Timestamp(1_686_000_000_000),
       randomBytes.slice(0, 4)
     );
     expect(u.getVersion()).toBe('V7');
@@ -57,7 +56,7 @@ describe('Uuid', () => {
   });
   test('negative_timestamp_error', () => {
     const counter = { value: 0 };
-    const ts = new Timestamp(-1n);
+    const ts = new Timestamp(-1);
 
     expect(() => {
       Uuid.fromCounterV7(counter, ts, new Uint8Array(4));
@@ -65,8 +64,8 @@ describe('Uuid', () => {
   });
   test('ordered', () => {
     // from_u128 equivalent:
-    const u1 = new Uuid(1n);
-    const u2 = new Uuid(2n);
+    const u1 = new Uuid(1);
+    const u2 = new Uuid(2);
 
     expect(u1.compareTo(u2)).toBeLessThan(0);
     expect(u2.compareTo(u1)).toBeGreaterThan(0);

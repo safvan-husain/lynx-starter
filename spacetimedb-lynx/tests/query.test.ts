@@ -7,7 +7,7 @@ import {
   not,
   toSql,
   toComparableValue,
-} from '../src/server/query';
+} from '../src/lib/query';
 import { ModuleContext, tablesToSchema } from '../src/lib/schema';
 import { table } from '../src/lib/table';
 import { t } from '../src/lib/type_builders';

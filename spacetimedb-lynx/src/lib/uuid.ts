@@ -90,6 +90,9 @@ export class Uuid {
     // 48-bit unix timestamp (ms)
     // Timestamp.toMillis() now returns number (safe up to 53 bits)
     const tsMs = now.toMillis();
+    if (tsMs < 0) {
+      throw new Error('`fromCounterV7` `timestamp` before unix epoch');
+    }
 
     const bytes = new Uint8Array(16);
 
