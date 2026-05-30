@@ -124,7 +124,10 @@
       reconnects a dropped managed connection with the latest token. Reducer
       accessors now also expose reducer event callbacks and reducer call flags,
       and the React reducer hook now carries pending/error state used by the
-      counter UI.
+      counter UI. Generated server views are now covered by a
+      <code>counter_snapshot</code> module fixture, focused SDK tests for view
+      SQL and <code>querySql</code> decode, and a React
+      <code>useTable(tables.counter_snapshot)</code> subscription test.
     </p>
 
     <table>
@@ -383,10 +386,17 @@
             Explicitly documents generated typed views with the same
             cache/stream APIs as tables.
           </td>
-          <td>No validated view usage in the Lynx demo.</td>
           <td>
-            <span class="partial">Unknown / unproven</span>: needs a view module
-            fixture and generated binding test before claiming support.
+            Generated bindings include the <code>counter_snapshot</code> view
+            fixture, and focused SDK tests cover view SQL rendering,
+            <code>querySql</code> decode, and
+            <code>useTable(tables.counter_snapshot)</code> subscription updates.
+          </td>
+          <td>
+            <span class="ok">Improved</span>: generated view bindings and
+            subscription/query paths are validated in SDK tests. Lynx demo UI
+            still reads <code>tables.counter</code> directly rather than the
+            view, and real-server view fixtures remain optional follow-up work.
           </td>
         </tr>
         <tr>
@@ -439,9 +449,10 @@
           </td>
           <td>
             <span class="partial">Closer, not complete</span>: React table hook,
-            iOS transport, one-off query, reducer ack, and iOS session/reconnect
-            gaps were reduced. Selected next candidate is server-defined view
-            fixture and generated binding validation.
+            iOS transport, one-off query, reducer ack, iOS session/reconnect,
+            and generated view subscription gaps were reduced. Remaining work
+            is mostly cross-platform transport validation, broader subscription
+            edge cases, and optional Lynx demo usage of server-defined views.
           </td>
         </tr>
       </tbody>
@@ -486,7 +497,7 @@
     </p>
     <div class="commit-message">
       <strong>Suggested commit message:</strong>
-      <code>Harden Lynx SpacetimeDB one-off query results</code>
+      <code>Validate server-defined views in SDK tests and comparison doc</code>
     </div>
     <table>
       <caption>
@@ -697,18 +708,35 @@
         </tr>
         <tr>
           <td>2026-05-30</td>
-          <td>Next selected gap</td>
+          <td>Server-defined view validation</td>
           <td>
-            Next candidate after one-off query result hardening is
-            server-defined view fixture and generated binding validation. The
-            comparison still marks view support as unproven because the demo
-            has no module fixture or SDK test proving generated view rows work.
+            Confirmed the existing <code>counter_snapshot</code> module view
+            fixture and generated bindings with focused SDK coverage for view
+            SQL rendering, <code>querySql</code> decode, and React
+            <code>useTable(tables.counter_snapshot)</code> subscription updates.
+            Updated this comparison page so server-defined views are marked
+            improved rather than unproven.
           </td>
           <td>
-            <span class="partial">Needs confirmation</span>: implementation
-            would add or reuse a SpacetimeDB module view fixture, regenerate or
-            mock typed bindings as needed, and cover generated view access in
-            focused SDK tests before updating this comparison.
+            <span class="ok">Validated</span>: new
+            <code>use_table</code> React tests pass, full
+            <code>spacetimedb-lynx</code> test suite passes (183 tests), and
+            comparison doc reflects generated view subscription support.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
+          <td>Next selected gap</td>
+          <td>
+            Remaining production gaps are mostly cross-platform transport
+            validation on Android and Harmony, broader subscription edge cases
+            such as reconnect resubscription and multi-query timing, and
+            optional Lynx demo usage of server-defined views in app UI.
+          </td>
+          <td>
+            <span class="partial">Needs confirmation</span>: pick the next
+            candidate based on whether mobile transport parity or broader
+            subscription hardening is higher priority for the demo app.
           </td>
         </tr>
         <tr>
