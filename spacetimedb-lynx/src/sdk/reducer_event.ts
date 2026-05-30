@@ -1,6 +1,11 @@
 import { Timestamp } from '../lib/timestamp';
-import type { ReducerOutcome } from './client_api/types';
+import type { ReducerOutcome, TransactionUpdate } from './client_api/types';
 import type { ReducerEventInfo } from './reducers';
+
+export type UpdateStatus =
+  | { tag: 'Committed'; value?: TransactionUpdate }
+  | { tag: 'Failed'; value: string }
+  | { tag: 'OutOfEnergy' };
 
 export type ReducerEvent<Reducer extends ReducerEventInfo> = {
   /**
@@ -13,8 +18,15 @@ export type ReducerEvent<Reducer extends ReducerEventInfo> = {
 
   /**
    * The reducer outcome, including optional return value and updates.
+   *
+   * @deprecated Prefer `status` for parity with the official reducer event API.
    */
   outcome: ReducerOutcome;
+
+  /**
+   * Whether the reducer committed, failed, or ran out of energy.
+   */
+  status: UpdateStatus;
 
   reducer: Reducer;
 };

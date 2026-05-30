@@ -3,6 +3,7 @@ import { ConnectionId, ProductBuilder, ProductType } from "../";
 import { AlgebraicType, type ComparablePrimitive } from "../";
 import { BinaryReader } from "../";
 import { BinaryWriter } from "../";
+import { toPascalCase } from "../lib/util";
 import {
   BsatnRowList,
   ClientMessage,
@@ -10,6 +11,7 @@ import {
   QuerySetUpdate,
   ServerMessage,
   TableUpdateRows,
+  type ReducerResult,
   UnsubscribeFlags,
 } from "./client_api/types";
 import { type FetchFn } from "./websocket_decompress_adapter.ts";
@@ -52,8 +54,12 @@ import {
 import { stdbLogger, stringify } from "./logger.ts";
 import { fromByteArray } from "base64-js";
 import type {
+  CallReducerFlags,
+  ReducerEventCallback,
   ReducerEventInfo,
   ReducersView,
+  ReducerCallOptions,
+  SetReducerFlagsView,
   SubscriptionEventCallback,
 } from "./reducers.ts";
 import type { ClientDbView } from "./db_view.ts";
@@ -102,6 +108,15 @@ export type DbConnectionConfig<RemoteModule extends UntypedRemoteModule> = {
 
 type ProcedureCallback = (result: ProcedureResultMessage["result"]) => void;
 
+function callReducerFlagsToNumber(flags: CallReducerFlags): number {
+  switch (flags) {
+    case "FullUpdate":
+      return 0;
+    case "NoSuccessNotify":
+      return 1;
+  }
+}
+
 export type OneOffQueryTableResult<Row = unknown> = {
   tableName: string;
   rows: Row[];
@@ -148,6 +163,11 @@ export class DbConnectionImpl<
   reducers: ReducersView<RemoteModule>;
 
   /**
+   * Configure reducer call flags used by generated reducer accessors.
+   */
+  setReducerFlags: SetReducerFlagsView<RemoteModule>;
+
+  /**
    * The accessor field to access the procedures in the database.
    */
   procedures: ProceduresView<RemoteModule>;
@@ -171,6 +191,8 @@ export class DbConnectionImpl<
     (result: ReducerResultMessage["result"]) => void
   >();
   #reducerCallInfo = new Map<number, { name: string; args: object }>();
+  #reducerEmitter = new EventEmitter<string, ReducerEventCallback<any>>();
+  #reducerDefaultFlags = new Map<string, CallReducerFlags>();
   #procedureCallbacks = new Map<number, ProcedureCallback>();
   #oneOffQueryCallbacks = new Map<
     number,
@@ -258,6 +280,7 @@ export class DbConnectionImpl<
 
     this.clientCache = new ClientCache<RemoteModule>();
     this.db = this.#makeDbView();
+    this.setReducerFlags = this.#makeSetReducerFlags(remoteModule);
     this.reducers = this.#makeReducers(remoteModule);
     this.procedures = this.#makeProcedures(remoteModule);
 
@@ -331,15 +354,43 @@ export class DbConnectionImpl<
       const { serialize: serializeArgs } =
         this.#reducerArgsSerializers[reducerName];
 
-      (out as any)[key] = (params: InferTypeOfRow<typeof reducer.params>) => {
+      (out as any)[key] = (
+        params: InferTypeOfRow<typeof reducer.params>,
+        options?: ReducerCallOptions,
+      ) => {
         writer.clear();
         serializeArgs(writer, params);
         const argsBuffer = writer.getBuffer();
-        return this.callReducer(reducerName, argsBuffer, params);
+        return this.callReducer(reducerName, argsBuffer, params, options?.flags);
+      };
+
+      const pascalName = toPascalCase(key);
+      (out as any)[`on${pascalName}`] = (
+        callback: ReducerEventCallback<RemoteModule, typeof reducer>,
+      ) => {
+        this.onReducer(reducerName, callback as ReducerEventCallback<RemoteModule>);
+        return callback;
+      };
+      (out as any)[`removeOn${pascalName}`] = (
+        callback: ReducerEventCallback<RemoteModule, typeof reducer>,
+      ) => {
+        this.offReducer(reducerName, callback as ReducerEventCallback<RemoteModule>);
       };
     }
 
     return out as ReducersView<RemoteModule>;
+  }
+
+  #makeSetReducerFlags(def: RemoteModule): SetReducerFlagsView<RemoteModule> {
+    const out: Record<string, unknown> = {};
+
+    for (const reducer of def.reducers) {
+      out[reducer.accessorName] = (flags: CallReducerFlags) => {
+        this.#reducerDefaultFlags.set(reducer.name, flags);
+      };
+    }
+
+    return out as SetReducerFlagsView<RemoteModule>;
   }
 
   #makeProcedures(def: RemoteModule): ProceduresView<RemoteModule> {
@@ -389,6 +440,74 @@ export class DbConnectionImpl<
       disconnect: this.disconnect.bind(this),
       event,
     };
+  }
+
+  #makeReducerEvent(
+    reducerInfo: { name: string; args: object },
+    result: ReducerResultMessage["result"],
+    timestamp: ReducerResult["timestamp"],
+  ): ReducerEvent<ReducerEventInfo<string, object>> {
+    let status: ReducerEvent<ReducerEventInfo<string, object>>["status"];
+    if (result.tag === "Ok") {
+      status = {
+        tag: "Committed",
+        value: result.value.transactionUpdate,
+      };
+    } else if (result.tag === "OkEmpty") {
+      status = { tag: "Committed" };
+    } else if (result.tag === "Err") {
+      status = {
+        tag: "Failed",
+        value: this.#deserializeReducerError(result.value),
+      };
+    } else {
+      status = {
+        tag: "Failed",
+        value: result.value,
+      };
+    }
+
+    return {
+      timestamp,
+      outcome: result,
+      status,
+      reducer: {
+        name: reducerInfo.name,
+        args: reducerInfo.args,
+      },
+    };
+  }
+
+  #deserializeReducerError(errorPayload: Uint8Array): string {
+    try {
+      return new BinaryReader(errorPayload).readString();
+    } catch {
+      return "Reducer failed";
+    }
+  }
+
+  #makeReducerEventContext(
+    event: ReducerEvent<ReducerEventInfo<string, object>>,
+  ): ReducerEventContextInterface<RemoteModule> {
+    return {
+      db: this.db,
+      reducers: this.reducers,
+      isActive: this.isActive,
+      subscriptionBuilder: this.subscriptionBuilder.bind(this),
+      querySql: this.querySql.bind(this),
+      disconnect: this.disconnect.bind(this),
+      event: event as any,
+    };
+  }
+
+  #emitReducerEvent(
+    reducerEvent: ReducerEvent<ReducerEventInfo<string, object>>,
+  ): void {
+    this.#reducerEmitter.emit(
+      reducerEvent.reducer.name,
+      this.#makeReducerEventContext(reducerEvent),
+      reducerEvent.reducer.args,
+    );
   }
 
   // NOTE: This is very important!!! This is the actual function that
@@ -802,23 +921,19 @@ export class DbConnectionImpl<
         break;
       }
       case "ReducerResult": {
-        const { requestId, result } = serverMessage.value;
+        const { requestId, result, timestamp } = serverMessage.value;
+        const reducerInfo = this.#reducerCallInfo.get(requestId);
+        const reducerEvent = reducerInfo
+          ? this.#makeReducerEvent(reducerInfo, result, timestamp)
+          : undefined;
 
         if (result.tag === "Ok") {
-          const reducerInfo = this.#reducerCallInfo.get(requestId);
           const eventId: string = this.#nextEventId();
-          const event: Event<any> = reducerInfo
+          const event: Event<any> = reducerEvent
             ? {
                 id: eventId,
                 tag: "Reducer",
-                value: {
-                  timestamp: serverMessage.value.timestamp,
-                  outcome: result,
-                  reducer: {
-                    name: reducerInfo.name,
-                    args: reducerInfo.args,
-                  },
-                },
+                value: reducerEvent,
               }
             : {
                 id: eventId,
@@ -837,6 +952,9 @@ export class DbConnectionImpl<
           for (const callback of callbacks) {
             callback.cb();
           }
+        }
+        if (reducerEvent) {
+          this.#emitReducerEvent(reducerEvent);
         }
         this.#reducerCallInfo.delete(requestId);
         const cb = this.#reducerCallbacks.get(requestId);
@@ -896,14 +1014,17 @@ export class DbConnectionImpl<
     reducerName: string,
     argsBuffer: Uint8Array,
     reducerArgs?: object,
+    flags?: CallReducerFlags,
   ): Promise<void> {
     const { promise, resolve, reject } = Promise.withResolvers<void>();
     const requestId = this.#getNextRequestId();
+    const reducerFlags =
+      flags ?? this.#reducerDefaultFlags.get(reducerName) ?? "FullUpdate";
     const message = ClientMessage.CallReducer({
       reducer: reducerName,
       args: argsBuffer,
       requestId,
-      flags: 0,
+      flags: callReducerFlagsToNumber(reducerFlags),
     });
     this.#sendMessage(message);
     if (reducerArgs) {
@@ -944,11 +1065,12 @@ export class DbConnectionImpl<
     // TODO: remove
     _paramsType: ProductType,
     params: object,
+    flags?: CallReducerFlags,
   ): Promise<void> {
     const writer = new BinaryWriter(1024);
     this.#reducerArgsSerializers[reducerName].serialize(writer, params);
     const argsBuffer = writer.getBuffer();
-    return this.callReducer(reducerName, argsBuffer, params);
+    return this.callReducer(reducerName, argsBuffer, params, flags);
   }
 
   /**
@@ -1094,5 +1216,19 @@ export class DbConnectionImpl<
     callback: (ctx: DbConnectionImpl<RemoteModule>, ...args: any[]) => void,
   ): void {
     this.#emitter.off("connectError", callback);
+  }
+
+  onReducer(
+    reducerName: string,
+    callback: ReducerEventCallback<RemoteModule>,
+  ): void {
+    this.#reducerEmitter.on(reducerName, callback);
+  }
+
+  offReducer(
+    reducerName: string,
+    callback: ReducerEventCallback<RemoteModule>,
+  ): void {
+    this.#reducerEmitter.off(reducerName, callback);
   }
 }

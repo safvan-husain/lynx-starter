@@ -5,11 +5,26 @@ import type { CoerceRow } from '../lib/table';
 import { RowBuilder, type InferTypeOfRow } from '../lib/type_builders';
 import { toCamelCase } from '../lib/util';
 import type { SubscriptionEventContextInterface } from './event_context';
+import type { ReducerEventContextInterface } from './event_context';
 import type { UntypedRemoteModule } from './spacetime_module';
 
 export type SubscriptionEventCallback<
   RemoteModule extends UntypedRemoteModule,
 > = (ctx: SubscriptionEventContextInterface<RemoteModule>) => void;
+
+export type CallReducerFlags = 'FullUpdate' | 'NoSuccessNotify';
+
+export type ReducerCallOptions = {
+  flags?: CallReducerFlags;
+};
+
+export type ReducerEventCallback<
+  RemoteModule extends UntypedRemoteModule,
+  Reducer extends UntypedReducerDef = RemoteModule['reducers'][number],
+> = (
+  ctx: ReducerEventContextInterface<RemoteModule>,
+  args: InferTypeOfRow<Reducer['params']>
+) => void;
 
 // Utility: detect 'any'
 type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N;
@@ -17,7 +32,8 @@ type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N;
 // Loose shape that allows all three families even when key names are unknown
 type ReducersViewLoose = {
   // call: camelCase(name)
-  [k: string]: (params: any) => Promise<void>;
+  [k: string]: ((params: any, options?: ReducerCallOptions) => Promise<void>) &
+    ((callback: ReducerEventCallback<any>) => ReducerEventCallback<any>);
 };
 
 export type ReducersView<RemoteModule> = IfAny<
@@ -26,8 +42,29 @@ export type ReducersView<RemoteModule> = IfAny<
   RemoteModule extends UntypedRemoteModule
     ? {
         [K in RemoteModule['reducers'][number] as K['accessorName']]: (
-          params: InferTypeOfRow<K['params']>
+          params: InferTypeOfRow<K['params']>,
+          options?: ReducerCallOptions
         ) => Promise<void>;
+      } & {
+        [K in RemoteModule['reducers'][number] as `on${Capitalize<K['accessorName']>}`]: (
+          callback: ReducerEventCallback<RemoteModule, K>
+        ) => ReducerEventCallback<RemoteModule, K>;
+      } & {
+        [K in RemoteModule['reducers'][number] as `removeOn${Capitalize<K['accessorName']>}`]: (
+          callback: ReducerEventCallback<RemoteModule, K>
+        ) => void;
+      }
+    : never
+>;
+
+export type SetReducerFlagsView<RemoteModule> = IfAny<
+  RemoteModule,
+  { [k: string]: (flags: CallReducerFlags) => void },
+  RemoteModule extends UntypedRemoteModule
+    ? {
+        [K in RemoteModule['reducers'][number] as K['accessorName']]: (
+          flags: CallReducerFlags
+        ) => void;
       }
     : never
 >;

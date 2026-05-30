@@ -11,7 +11,15 @@ export { type RemoteModule } from './spacetime_module';
 export * from '../lib/type_builders';
 export { schema, convertToAccessorMap } from './schema';
 export { table } from '../lib/table';
-export { reducerSchema, reducers } from './reducers';
+export {
+  reducerSchema,
+  reducers,
+  type CallReducerFlags,
+  type ReducerCallOptions,
+  type ReducerEventCallback,
+  type ReducersView,
+  type SetReducerFlagsView,
+} from './reducers';
 export { procedureSchema, procedures } from './procedures';
 export * from './type_utils';
 export * from './websocket_decompress_adapter';

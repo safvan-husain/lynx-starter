@@ -121,7 +121,8 @@
       actions now await SDK reducer acknowledgements directly instead of using
       an app-side timeout wrapper. Session continuity now reuses persisted
       tokens, validates restored auth sessions with a one-off query, and
-      reconnects a dropped managed connection with the latest token.
+      reconnects a dropped managed connection with the latest token. Reducer
+      accessors now also expose reducer event callbacks and reducer call flags.
     </p>
 
     <table>
@@ -313,15 +314,15 @@
             features.
           </td>
           <td>
-            Core reducer calls exist; subscription builder now surfaces
-            <code>onError(ctx, error)</code> for failed subscriptions, but
-            reducer event helper APIs and reducer flags still need upstream
-            parity review.
+            Core reducer calls exist; subscription builder surfaces
+            <code>onError(ctx, error)</code> for failed subscriptions. Reducer
+            accessors now expose <code>onX</code>/<code>removeOnX</code>
+            callbacks and <code>setReducerFlags</code> / per-call flags.
           </td>
           <td>
-            <span class="partial">Audit needed</span>: reducer calls work in the
-            admin counter flow, but local ergonomics may still lag upstream
-            reducer event/flag APIs.
+            <span class="ok">Improved</span>: focused SDK tests validate reducer
+            callback order, failed reducer callback status, and
+            <code>FullUpdate</code>/<code>NoSuccessNotify</code> flag encoding.
           </td>
         </tr>
         <tr>
@@ -478,7 +479,7 @@
     </p>
     <div class="commit-message">
       <strong>Suggested commit message:</strong>
-      <code>Improve Lynx SpacetimeDB session reconnect continuity</code>
+      <code>Improve Lynx SpacetimeDB reducer event parity</code>
     </div>
     <table>
       <caption>
@@ -631,18 +632,33 @@
         </tr>
         <tr>
           <td>2026-05-30</td>
-          <td>Next selected gap</td>
+          <td>Reducer event callback / flag parity</td>
           <td>
-            Selected reducer event callback / flag parity as the next best
-            candidate because reducer calls now acknowledge correctly, but the
-            local SDK still lacks a clear parity layer for official reducer
-            event helpers and reducer call flags.
+            Added generated reducer callback helpers
+            <code>connection.reducers.onX</code> and
+            <code>removeOnX</code>, added reducer event
+            <code>status</code> alongside the existing outcome, and wired
+            <code>setReducerFlags</code> plus per-call reducer flag overrides.
           </td>
           <td>
-            <span class="partial">Needs confirmation</span>: proposed
-            implementation scope is audit upstream reducer event APIs, add local
-            callback/flag support where missing, and validate with focused SDK
-            tests plus simulator reducer flows.
+            <span class="ok">Validated</span>: focused SDK tests cover reducer
+            callbacks after row callbacks, reducer failure callbacks, and
+            <code>FullUpdate</code>/<code>NoSuccessNotify</code> flag encoding;
+            full <code>spacetimedb-lynx</code> tests and SDK build pass.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
+          <td>Next selected gap</td>
+          <td>
+            Next candidate after reducer parity is improving React reducer
+            ergonomics: a small <code>useReducer</code> hook wrapper around
+            typed reducers with pending/error state for Lynx and React callers.
+          </td>
+          <td>
+            <span class="partial">Needs confirmation</span>: implementation
+            would add the hook, tests, and update the counter/auth callers only
+            if it improves local code rather than adding indirection.
           </td>
         </tr>
         <tr>
