@@ -42,6 +42,7 @@ import CreatePlayerReducer from './create_player_reducer';
 import PlayerRow from './player_table';
 import UnindexedPlayerRow from './unindexed_player_table';
 import UserRow from './user_table';
+import CounterSnapshotRow from './counter_snapshot_table';
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -105,6 +106,14 @@ const tablesSchema = __schema({
       ],
     },
     UserRow
+  ),
+  counter_snapshot: __table(
+    {
+      name: 'counter_snapshot',
+      indexes: [],
+      constraints: [],
+    },
+    CounterSnapshotRow
   ),
 });
 

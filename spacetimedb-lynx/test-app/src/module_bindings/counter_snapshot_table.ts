@@ -8,6 +8,9 @@ import {
   t as __t,
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
-} from "spacetimedb-lynx";
+} from '../../../src/index';
 
-export default {};
+export default __t.row({
+  id: __t.u32(),
+  count: __t.i32(),
+});

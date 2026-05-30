@@ -2,9 +2,9 @@ mod counter;
 mod identity;
 
 pub use counter::{decrement_counter, increment_counter, reset_counter};
-pub use identity::{login, logout, register, UserRole};
+pub use identity::{UserRole, login, logout, register};
 
-use spacetimedb::{reducer, ReducerContext};
+use spacetimedb::{ReducerContext, reducer};
 
 #[reducer(init)]
 fn init(ctx: &ReducerContext) {

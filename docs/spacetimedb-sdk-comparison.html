@@ -122,7 +122,9 @@
       an app-side timeout wrapper. Session continuity now reuses persisted
       tokens, validates restored auth sessions with a one-off query, and
       reconnects a dropped managed connection with the latest token. Reducer
-      accessors now also expose reducer event callbacks and reducer call flags.
+      accessors now also expose reducer event callbacks and reducer call flags,
+      and the React reducer hook now carries pending/error state used by the
+      counter UI.
     </p>
 
     <table>
@@ -233,16 +235,18 @@
           </td>
           <td>
             Provides <code>SpacetimeDBProvider</code>,
-            <code>useSpacetimeDB</code>, and a working <code>useTable</code>.
+            <code>useSpacetimeDB</code>, a working <code>useTable</code>, and
+            a stateful <code>useReducer</code>.
             The counter screen now reads <code>tables.counter</code> through
             <code>useTable</code> instead of polling REST SQL.
           </td>
           <td>
-            <span class="partial">Mostly covered for tables</span>:
+            <span class="ok">Improved</span>:
             <code>useTable</code> is functional for table queries, filters,
             insert/delete/update callbacks, disabled state, and subscription
-            errors. Hook parity still needs broader fixtures and a local
-            <code>useReducer</code> audit.
+            errors. <code>useReducer</code> now exposes pending/error state,
+            disabled behavior, optional queued calls, and reducer flags. Broader
+            hook fixtures remain useful.
           </td>
         </tr>
         <tr>
@@ -342,9 +346,12 @@
             row objects grouped by table.
           </td>
           <td>
-            <span class="partial">Improved</span>: auth/session reads no longer
-            use the app REST SQL helper. Remaining work is broader projection
-            coverage and real-server fixtures for complex SQL result shapes.
+            <span class="ok">Improved</span>: auth/session reads no longer use
+            the app REST SQL helper. Empty results, multi-table results, and
+            unsupported projection shapes now fail with explicit
+            <code>OneOffQueryDecodeError</code> messages instead of async
+            handler crashes. Real-server fixtures for generated view/projection
+            rows remain.
           </td>
         </tr>
         <tr>
@@ -433,8 +440,8 @@
           <td>
             <span class="partial">Closer, not complete</span>: React table hook,
             iOS transport, one-off query, reducer ack, and iOS session/reconnect
-            gaps were reduced. Selected next candidate is reducer event callback
-            / flag parity with the official SDK.
+            gaps were reduced. Selected next candidate is server-defined view
+            fixture and generated binding validation.
           </td>
         </tr>
       </tbody>
@@ -479,7 +486,7 @@
     </p>
     <div class="commit-message">
       <strong>Suggested commit message:</strong>
-      <code>Improve Lynx SpacetimeDB reducer event parity</code>
+      <code>Harden Lynx SpacetimeDB one-off query results</code>
     </div>
     <table>
       <caption>
@@ -581,6 +588,25 @@
         </tr>
         <tr>
           <td>2026-05-30</td>
+          <td>One-off query result hardening</td>
+          <td>
+            Added explicit <code>OneOffQueryDecodeError</code> handling for
+            unsupported <code>querySql</code> result shapes, covered empty and
+            multi-table result sets, and made unknown table/projection decode
+            failures reject the query promise with actionable messages.
+          </td>
+          <td>
+            <span class="ok">Validated</span>: focused
+            <code>db_connection</code> tests pass, full
+            <code>spacetimedb-lynx</code> test suite passes, SDK build passes,
+            Lynx app build passes, host bundles were synced, the iOS simulator
+            helper republished a fresh in-memory <code>lynx-counter</code>, and
+            admin <code>Increase</code> updated both UI and SQL count from
+            <code>0</code> to <code>1</code>.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
           <td>Reducer ack behavior</td>
           <td>
             Removed the app-side <code>runReducerWithTimeout</code> wrapper and
@@ -649,16 +675,40 @@
         </tr>
         <tr>
           <td>2026-05-30</td>
+          <td>React reducer hook ergonomics</td>
+          <td>
+            Upgraded <code>spacetimedb-lynx/react</code>
+            <code>useReducer</code> from a callable-only wrapper to a
+            stateful reducer caller with <code>status</code>,
+            <code>isPending</code>, <code>pendingCount</code>,
+            <code>error</code>, <code>resetError</code>, disabled behavior,
+            optional queued disconnected calls, and reducer flag support. The
+            counter hook now uses this SDK hook for increment, decrement, and
+            reset.
+          </td>
+          <td>
+            <span class="ok">Validated</span>: <code>spacetimedb-lynx</code>
+            build passes, full SDK test suite passes, Lynx app build passes,
+            host bundles were synced, and iOS simulator validation confirmed
+            admin <code>Increase</code> updates the UI and SQL counter from
+            <code>0</code> to <code>1</code> with no reducer, SQL,
+            subscription, or connection failure logs.
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-30</td>
           <td>Next selected gap</td>
           <td>
-            Next candidate after reducer parity is improving React reducer
-            ergonomics: a small <code>useReducer</code> hook wrapper around
-            typed reducers with pending/error state for Lynx and React callers.
+            Next candidate after one-off query result hardening is
+            server-defined view fixture and generated binding validation. The
+            comparison still marks view support as unproven because the demo
+            has no module fixture or SDK test proving generated view rows work.
           </td>
           <td>
             <span class="partial">Needs confirmation</span>: implementation
-            would add the hook, tests, and update the counter/auth callers only
-            if it improves local code rather than adding indirection.
+            would add or reuse a SpacetimeDB module view fixture, regenerate or
+            mock typed bindings as needed, and cover generated view access in
+            focused SDK tests before updating this comparison.
           </td>
         </tr>
         <tr>

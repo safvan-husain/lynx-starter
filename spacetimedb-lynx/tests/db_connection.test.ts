@@ -15,10 +15,12 @@ import User from "../test-app/src/module_bindings/user_table";
 import {
   anIdentity,
   bobIdentity,
+  encodeCounterSnapshot,
   encodePlayer,
   encodeUser,
   makeQueryRows,
   makeQuerySetUpdate,
+  makeRowList,
   sallyIdentity,
 } from "./utils";
 
@@ -353,6 +355,170 @@ describe("DbConnection", () => {
 
     await expect(queryPromise).rejects.toThrow(
       "relation missing_table not found",
+    );
+  });
+
+  test("querySql resolves empty and multi-table results", async () => {
+    const wsAdapter = new WebsocketTestAdapter();
+    const client = DbConnection.builder()
+      .withUri("ws://127.0.0.1:1234")
+      .withDatabaseName("db")
+      .withWSFn(wsAdapter.createWebSocketFn.bind(wsAdapter) as any)
+      .build();
+
+    await client["wsPromise"];
+    wsAdapter.acceptConnection();
+
+    const queryPromise = client.querySql("SELECT * FROM user; SELECT * FROM player");
+    await Promise.resolve();
+    const { requestId } = getLastOneOffQueryMessageInfo(wsAdapter);
+
+    wsAdapter.sendToClient(
+      ServerMessage.OneOffQueryResult({
+        requestId,
+        result: {
+          ok: {
+            tables: [
+              {
+                table: "user",
+                rows: makeRowList(new Uint8Array()),
+              },
+              {
+                table: "player",
+                rows: makeRowList(
+                  encodePlayer({
+                    id: 1,
+                    userId: anIdentity,
+                    name: "A Player",
+                    location: { x: 4, y: 5 },
+                  }),
+                ),
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    await expect(queryPromise).resolves.toEqual([
+      {
+        tableName: "user",
+        rows: [],
+      },
+      {
+        tableName: "player",
+        rows: [
+          {
+            id: 1,
+            userId: anIdentity,
+            name: "A Player",
+            location: { x: 4, y: 5 },
+          },
+        ],
+      },
+    ]);
+  });
+
+  test("querySql decodes generated server view rows", async () => {
+    const wsAdapter = new WebsocketTestAdapter();
+    const client = DbConnection.builder()
+      .withUri("ws://127.0.0.1:1234")
+      .withDatabaseName("db")
+      .withWSFn(wsAdapter.createWebSocketFn.bind(wsAdapter) as any)
+      .build();
+
+    await client["wsPromise"];
+    wsAdapter.acceptConnection();
+
+    const queryPromise = client.querySql("SELECT * FROM counter_snapshot");
+    await Promise.resolve();
+    const { requestId } = getLastOneOffQueryMessageInfo(wsAdapter);
+
+    wsAdapter.sendToClient(
+      ServerMessage.OneOffQueryResult({
+        requestId,
+        result: {
+          ok: makeQueryRows(
+            "counter_snapshot",
+            encodeCounterSnapshot({ id: 0, count: 7 }),
+          ),
+        },
+      }),
+    );
+
+    await expect(queryPromise).resolves.toEqual([
+      {
+        tableName: "counter_snapshot",
+        rows: [{ id: 0, count: 7 }],
+      },
+    ]);
+  });
+
+  test("querySql rejects unknown result tables with a useful decode error", async () => {
+    const wsAdapter = new WebsocketTestAdapter();
+    const client = DbConnection.builder()
+      .withUri("ws://127.0.0.1:1234")
+      .withDatabaseName("db")
+      .withWSFn(wsAdapter.createWebSocketFn.bind(wsAdapter) as any)
+      .build();
+
+    await client["wsPromise"];
+    wsAdapter.acceptConnection();
+
+    const queryPromise = client.querySql("SELECT 1 AS count");
+    await Promise.resolve();
+    const { requestId } = getLastOneOffQueryMessageInfo(wsAdapter);
+
+    wsAdapter.sendToClient(
+      ServerMessage.OneOffQueryResult({
+        requestId,
+        result: {
+          ok: {
+            tables: [
+              {
+                table: "projection",
+                rows: makeRowList(new Uint8Array([1, 0, 0, 0])),
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    await expect(queryPromise).rejects.toThrow(
+      'Cannot deserialize OneOffQuery result for unknown table "projection".',
+    );
+  });
+
+  test("querySql rejects mismatched projection bytes with a useful decode error", async () => {
+    const wsAdapter = new WebsocketTestAdapter();
+    const client = DbConnection.builder()
+      .withUri("ws://127.0.0.1:1234")
+      .withDatabaseName("db")
+      .withWSFn(wsAdapter.createWebSocketFn.bind(wsAdapter) as any)
+      .build();
+
+    await client["wsPromise"];
+    wsAdapter.acceptConnection();
+
+    const queryPromise = client.querySql("SELECT username FROM user");
+    await Promise.resolve();
+    const { requestId } = getLastOneOffQueryMessageInfo(wsAdapter);
+
+    const writer = new BinaryWriter(1024);
+    writer.writeString("bob");
+
+    wsAdapter.sendToClient(
+      ServerMessage.OneOffQueryResult({
+        requestId,
+        result: {
+          ok: makeQueryRows("user", writer.getBuffer()),
+        },
+      }),
+    );
+
+    await expect(queryPromise).rejects.toThrow(
+      'Cannot deserialize OneOffQuery result for table "user".',
     );
   });
 

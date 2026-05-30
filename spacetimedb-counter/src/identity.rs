@@ -1,4 +1,4 @@
-use spacetimedb::{reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
+use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, Timestamp, reducer, table};
 
 const MAX_LOGIN_ATTEMPTS: u32 = 8;
 const LOGIN_WINDOW_MICROS: i64 = 60 * 1_000_000; // 60 seconds
@@ -206,7 +206,13 @@ pub fn login(ctx: &ReducerContext, username: String, password: String) -> Result
         logged_in_at: ctx.timestamp,
     };
 
-    if ctx.db.auth_session().identity().find(ctx.sender()).is_some() {
+    if ctx
+        .db
+        .auth_session()
+        .identity()
+        .find(ctx.sender())
+        .is_some()
+    {
         ctx.db.auth_session().identity().update(session);
     } else {
         ctx.db.auth_session().insert(session);

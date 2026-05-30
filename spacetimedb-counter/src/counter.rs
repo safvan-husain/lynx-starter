@@ -1,12 +1,32 @@
-use spacetimedb::{reducer, table, ReducerContext, Table};
+use spacetimedb::{
+    AnonymousViewContext, ReducerContext, SpacetimeType, Table, reducer, table, view,
+};
 
-use crate::identity::{require_role, UserRole};
+use crate::identity::{UserRole, require_role};
 
 #[table(public, accessor = counter)]
 struct Counter {
     #[primary_key]
     id: u32,
     count: i32,
+}
+
+#[derive(SpacetimeType)]
+struct CounterSnapshot {
+    id: u32,
+    count: i32,
+}
+
+#[view(accessor = counter_snapshot, public)]
+fn counter_snapshot(ctx: &AnonymousViewContext) -> Option<CounterSnapshot> {
+    ctx.db
+        .counter()
+        .id()
+        .find(0)
+        .map(|counter| CounterSnapshot {
+            id: counter.id,
+            count: counter.count,
+        })
 }
 
 pub(crate) fn ensure_counter_initialized(ctx: &ReducerContext) {

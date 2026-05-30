@@ -5,6 +5,7 @@ import { RowSizeHint, TableUpdateRows } from '../src/sdk/client_api/types';
 import PlayerRow from '../test-app/src/module_bindings/player_table';
 import { Point } from '../test-app/src/module_bindings/types';
 import UserRow from '../test-app/src/module_bindings/user_table';
+import CounterSnapshotRow from '../test-app/src/module_bindings/counter_snapshot_table';
 
 export const anIdentity = Identity.fromString(
   '0000000000000000000000000000000000000000000000000000000000000069'
@@ -25,6 +26,14 @@ export function encodePlayer(value: Infer<typeof PlayerRow>): Uint8Array {
 export function encodeUser(value: Infer<typeof UserRow>): Uint8Array {
   const writer = new BinaryWriter(1024);
   UserRow.serialize(writer, value);
+  return writer.getBuffer();
+}
+
+export function encodeCounterSnapshot(
+  value: Infer<typeof CounterSnapshotRow>
+): Uint8Array {
+  const writer = new BinaryWriter(1024);
+  CounterSnapshotRow.serialize(writer, value);
   return writer.getBuffer();
 }
 

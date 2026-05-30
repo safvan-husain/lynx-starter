@@ -4,11 +4,11 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  type AlgebraicTypeType as __AlgebraicTypeType,
-  type Infer as __Infer,
   TypeBuilder as __TypeBuilder,
   t as __t,
-} from 'spacetimedb-lynx';
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
+} from "spacetimedb-lynx";
 
 export default __t.row({
   id: __t.u32().primaryKey(),

@@ -10,6 +10,22 @@ describe('ClientQuery.toSql', () => {
     expect(sql).toBe('SELECT * FROM "player"');
   });
 
+  it('renders a full view scan for generated server views', () => {
+    const sql = toSql(tables.counter_snapshot.build());
+
+    expect(sql).toBe('SELECT * FROM "counter_snapshot"');
+  });
+
+  it('renders WHERE clauses for generated server views', () => {
+    const sql = toSql(
+      tables.counter_snapshot.where(row => row.count.gte(1)).build()
+    );
+
+    expect(sql).toBe(
+      'SELECT * FROM "counter_snapshot" WHERE "counter_snapshot"."count" >= 1'
+    );
+  });
+
   it('renders a WHERE clause for simple equality filters', () => {
     const sql = toSql(
       tables.player.where(row => row.name.eq("O'Brian")).build()

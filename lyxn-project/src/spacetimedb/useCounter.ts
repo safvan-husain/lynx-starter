@@ -1,10 +1,9 @@
 import { useCallback, useState } from '@lynx-js/react';
-import { useTable } from 'spacetimedb-lynx/react';
+import { useReducer, useTable } from 'spacetimedb-lynx/react';
 import { writeHostLog } from '../debug/hostFileLogger';
 import { COUNTER_DATABASE_NAME, COUNTER_SERVER_URL } from './connectionConfig';
 import { getErrorMessage } from './errors';
-import type { DbConnection } from './module_bindings';
-import { tables } from './module_bindings';
+import { reducers, tables } from './module_bindings';
 import { useSpacetimeConnection } from './useSpacetimeConnection';
 
 export type CounterConnectionStatus = 'idle' | 'ready' | 'failed';
@@ -28,9 +27,10 @@ export interface UseCounterReturn {
 export function useCounter({
   isSignedIn,
 }: UseCounterOptions): UseCounterReturn {
-  const { connection, status: connectionStatus } = useSpacetimeConnection();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isMutating, setIsMutating] = useState(false);
+  const { status: connectionStatus } = useSpacetimeConnection();
+  const [subscriptionErrorMessage, setSubscriptionErrorMessage] = useState<
+    string | null
+  >(null);
 
   const handleSubscriptionError = useCallback((error: Error) => {
     const message = getErrorMessage(error);
@@ -38,8 +38,34 @@ export function useCounter({
       source: 'useCounter',
       message,
     });
-    setErrorMessage(message);
+    setSubscriptionErrorMessage(message);
   }, []);
+
+  const handleReducerError = useCallback(
+    (action: string) => (error: Error) => {
+      const message = getErrorMessage(error);
+      writeHostLog('error', '[Counter] Reducer call failed', {
+        source: 'useCounter',
+        action,
+        message,
+      });
+    },
+    [],
+  );
+
+  const reducerEnabled = isSignedIn && connectionStatus === 'connected';
+  const incrementCounter = useReducer(reducers.incrementCounter, {
+    enabled: reducerEnabled,
+    onError: handleReducerError('increment'),
+  });
+  const decrementCounter = useReducer(reducers.decrementCounter, {
+    enabled: reducerEnabled,
+    onError: handleReducerError('decrement'),
+  });
+  const resetCounter = useReducer(reducers.resetCounter, {
+    enabled: reducerEnabled,
+    onError: handleReducerError('reset'),
+  });
 
   const [counterRows, counterReady] = useTable(tables.counter, {
     enabled: isSignedIn && connectionStatus === 'connected',
@@ -54,58 +80,53 @@ export function useCounter({
         : 'idle'
       : 'idle';
 
+  const isMutating =
+    incrementCounter.isPending ||
+    decrementCounter.isPending ||
+    resetCounter.isPending;
+
+  const resetReducerErrors = useCallback(() => {
+    incrementCounter.resetError();
+    decrementCounter.resetError();
+    resetCounter.resetError();
+  }, [decrementCounter, incrementCounter, resetCounter]);
+
   const runReducer = useCallback(
-    async (
-      label: string,
-      reducer: (activeConnection: DbConnection) => Promise<unknown>,
-    ) => {
-      if (!connection || connectionStatus !== 'connected' || isMutating) {
+    async (reducer: () => Promise<void>) => {
+      if (!reducerEnabled || isMutating) {
         return;
       }
 
-      setIsMutating(true);
-      setErrorMessage(null);
-
-      try {
-        await reducer(connection);
-      } catch (error) {
-        const message = getErrorMessage(error);
-        writeHostLog('error', '[Counter] Reducer call failed', {
-          source: 'useCounter',
-          action: label,
-          message,
-        });
-        setErrorMessage(message);
-      } finally {
-        setIsMutating(false);
-      }
+      setSubscriptionErrorMessage(null);
+      resetReducerErrors();
+      await reducer().catch(() => {});
     },
-    [connection, connectionStatus, isMutating],
+    [isMutating, reducerEnabled, resetReducerErrors],
   );
 
   const increment = useCallback(
-    () =>
-      runReducer('increment', (activeConnection) =>
-        activeConnection.reducers.incrementCounter({}),
-      ),
-    [runReducer],
+    () => runReducer(() => incrementCounter({})),
+    [incrementCounter, runReducer],
   );
 
   const decrement = useCallback(
-    () =>
-      runReducer('decrement', (activeConnection) =>
-        activeConnection.reducers.decrementCounter({}),
-      ),
-    [runReducer],
+    () => runReducer(() => decrementCounter({})),
+    [decrementCounter, runReducer],
   );
 
   const reset = useCallback(
-    () =>
-      runReducer('reset', (activeConnection) =>
-        activeConnection.reducers.resetCounter({}),
-      ),
-    [runReducer],
+    () => runReducer(() => resetCounter({})),
+    [resetCounter, runReducer],
   );
+
+  const reducerErrorMessage = getErrorMessage(
+    incrementCounter.error ?? decrementCounter.error ?? resetCounter.error,
+  );
+  const errorMessage =
+    subscriptionErrorMessage ??
+    (incrementCounter.error || decrementCounter.error || resetCounter.error
+      ? reducerErrorMessage
+      : null);
 
   return {
     counterValue,

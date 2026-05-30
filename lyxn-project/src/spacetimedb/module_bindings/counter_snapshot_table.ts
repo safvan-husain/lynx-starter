@@ -10,4 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb-lynx";
 
-export default {};
+export default __t.row({
+  id: __t.u32(),
+  count: __t.i32(),
+});

@@ -4,14 +4,14 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  type AlgebraicTypeType as __AlgebraicTypeType,
-  type Infer as __Infer,
   TypeBuilder as __TypeBuilder,
   t as __t,
-} from 'spacetimedb-lynx';
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
+} from "spacetimedb-lynx";
 
 export default __t.row({
   identity: __t.identity().primaryKey(),
-  attemptCount: __t.u32().name('attempt_count'),
-  windowStartedAt: __t.timestamp().name('window_started_at'),
+  attemptCount: __t.u32().name("attempt_count"),
+  windowStartedAt: __t.timestamp().name("window_started_at"),
 });

@@ -4,13 +4,13 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  type AlgebraicTypeType as __AlgebraicTypeType,
-  type Infer as __Infer,
   TypeBuilder as __TypeBuilder,
   t as __t,
-} from 'spacetimedb-lynx';
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
+} from "spacetimedb-lynx";
 
-export const AppUser = __t.object('AppUser', {
+export const AppUser = __t.object("AppUser", {
   userId: __t.u32(),
   username: __t.string(),
   passwordHash: __t.string(),
@@ -21,7 +21,7 @@ export const AppUser = __t.object('AppUser', {
 });
 export type AppUser = __Infer<typeof AppUser>;
 
-export const AuthSession = __t.object('AuthSession', {
+export const AuthSession = __t.object("AuthSession", {
   identity: __t.identity(),
   userId: __t.u32(),
   username: __t.string(),
@@ -32,13 +32,19 @@ export const AuthSession = __t.object('AuthSession', {
 });
 export type AuthSession = __Infer<typeof AuthSession>;
 
-export const Counter = __t.object('Counter', {
+export const Counter = __t.object("Counter", {
   id: __t.u32(),
   count: __t.i32(),
 });
 export type Counter = __Infer<typeof Counter>;
 
-export const LoginAttempt = __t.object('LoginAttempt', {
+export const CounterSnapshot = __t.object("CounterSnapshot", {
+  id: __t.u32(),
+  count: __t.i32(),
+});
+export type CounterSnapshot = __Infer<typeof CounterSnapshot>;
+
+export const LoginAttempt = __t.object("LoginAttempt", {
   identity: __t.identity(),
   attemptCount: __t.u32(),
   windowStartedAt: __t.timestamp(),
@@ -46,10 +52,11 @@ export const LoginAttempt = __t.object('LoginAttempt', {
 export type LoginAttempt = __Infer<typeof LoginAttempt>;
 
 // The tagged union or sum type for the algebraic type `UserRole`.
-export const UserRole = __t.enum('UserRole', {
+export const UserRole = __t.enum("UserRole", {
   Student: __t.unit(),
   Parent: __t.unit(),
   Teacher: __t.unit(),
   Admin: __t.unit(),
 });
 export type UserRole = __Infer<typeof UserRole>;
+

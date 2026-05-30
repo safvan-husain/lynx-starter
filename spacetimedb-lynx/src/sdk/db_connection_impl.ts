@@ -122,6 +122,14 @@ export type OneOffQueryTableResult<Row = unknown> = {
   rows: Row[];
 };
 
+export class OneOffQueryDecodeError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message);
+    this.name = "OneOffQueryDecodeError";
+    this.cause = options?.cause;
+  }
+}
+
 type OneOffQueryWireResult =
   | { ok: QueryRows }
   | {
@@ -642,10 +650,30 @@ export class DbConnectionImpl<
   #queryRowsToTableResults(rows: QueryRows): OneOffQueryTableResult[] {
     return rows.tables.map((tableRows) => ({
       tableName: tableRows.table,
-      rows: this.#parseRowList("insert", tableRows.table, tableRows.rows).map(
-        (op) => op.row,
-      ),
+      rows: this.#queryTableRowsToRows(tableRows.table, tableRows.rows),
     }));
+  }
+
+  #queryTableRowsToRows(tableName: string, rowList: BsatnRowList): unknown[] {
+    if (!this.#rowDeserializers[tableName]) {
+      throw new OneOffQueryDecodeError(
+        `Cannot deserialize OneOffQuery result for unknown table "${tableName}". ` +
+          "Only generated table rows are supported by querySql().",
+      );
+    }
+
+    try {
+      return this.#parseRowList("insert", tableName, rowList).map(
+        (op) => op.row,
+      );
+    } catch (cause) {
+      throw new OneOffQueryDecodeError(
+        `Cannot deserialize OneOffQuery result for table "${tableName}". ` +
+          "The SQL result shape may not match the generated table row type; " +
+          "use SELECT * for typed rows or add a generated row type for the projection.",
+        { cause },
+      );
+    }
   }
 
   #tableUpdateRowsToOperations(
@@ -1144,7 +1172,11 @@ export class DbConnectionImpl<
 
     this.#oneOffQueryCallbacks.set(requestId, (result) => {
       if ("ok" in result) {
-        resolve(this.#queryRowsToTableResults(result.ok));
+        try {
+          resolve(this.#queryRowsToTableResults(result.ok));
+        } catch (error) {
+          reject(error);
+        }
       } else {
         reject(new Error(result.err));
       }
